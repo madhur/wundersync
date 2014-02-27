@@ -10,7 +10,7 @@ public class App extends Application
 {
 	
 	private static Bus bus;
-	public static String TAG="WunderSync";
+	public static final String TAG="WunderSync";
 	
 	public static final boolean DEBUG = true;
 	public static final boolean LOCAL_LOGV = DEBUG;

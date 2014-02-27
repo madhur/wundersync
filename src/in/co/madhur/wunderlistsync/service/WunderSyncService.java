@@ -1,5 +1,6 @@
 package in.co.madhur.wunderlistsync.service;
 
+import in.co.madhur.wunderlistsync.SyncConfig;
 import in.co.madhur.wunderlistsync.api.LoginResponse;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
 import retrofit.RestAdapter;
@@ -7,6 +8,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.provider.CalendarContract.SyncState;
 import android.util.Log;
 
 public class WunderSyncService extends Service
@@ -15,14 +17,12 @@ public class WunderSyncService extends Service
 	@Override
 	public IBinder onBind(Intent intent)
 	{
-		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
-		// TODO Auto-generated method stub
 		super.onStartCommand(intent, flags, startId);
 		
 		SyncWunder();
@@ -32,28 +32,25 @@ public class WunderSyncService extends Service
 
 	private void SyncWunder()
 	{
-		
-		new WunderSyncTask().execute(0);
-		
-	
+		AppPreferences preferences=new AppPreferences(this);
+		SyncConfig config=new SyncConfig(true, true, null);
+		new WunderSyncTask().execute(config);
 		
 	}
 	
 	
-	private class WunderSyncTask extends AsyncTask<Integer, Integer, Integer>
+	private class WunderSyncTask extends AsyncTask<SyncConfig, SyncState, SyncState>
 	{
 		@Override
 		protected void onPreExecute()
 		{
-			// TODO Auto-generated method stub
 			super.onPreExecute();
 		}
 		
 
 		@Override
-		protected void onProgressUpdate(Integer... values)
+		protected void onProgressUpdate(SyncState... values)
 		{
-			// TODO Auto-generated method stub
 			super.onProgressUpdate(values);
 			
 			
@@ -61,21 +58,26 @@ public class WunderSyncService extends Service
 		
 		
 		@Override
-		protected Integer doInBackground(Integer... params)
+		protected SyncState doInBackground(SyncConfig... params)
 		{
 			
 			
-			publishProgress(1);
+			return null;
 			
-			return 1;
+			
+			//publishProgress(1);
+			
+			
 		}
 		
 		@Override
-		protected void onPostExecute(Integer result)
+		protected void onPostExecute(SyncState result)
 		{
-			// TODO Auto-generated method stub
 			super.onPostExecute(result);
 		}
+
+
+		
 		
 		
 	}

@@ -16,7 +16,10 @@ public class AppPreferences
 		ENABLE_AUTO_SYNC("enable_auto_sync"),
 		AUTO_SYNC_SCHEDULE("auto_backup_schedule"),
 		ENABLE_WIFI_ONLY("wifi_only"),
-		USER_NAME_GOOGLE("user_name_google");
+		USER_NAME_GOOGLE("user_name_google"),
+		LAST_SYNC_DATE("last_sync_date"),
+		WUNDER_USERNAME("wunder_username"),
+		WUNDER_PASSWORD("wunder_password");
 		
 		
 		public final String key;
@@ -42,6 +45,14 @@ public class AppPreferences
 	{
 		String defValue="";
 		return sharedPreferences.getString(key.key,defValue);
+		
+	}
+	
+	public void SetMetadata(Keys key, String value)
+	{
+		Editor edit=sharedPreferences.edit();
+		edit.putString(key.key, value);
+		edit.commit();
 		
 	}
 	

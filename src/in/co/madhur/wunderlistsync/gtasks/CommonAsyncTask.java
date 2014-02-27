@@ -52,7 +52,7 @@ abstract class CommonAsyncTask extends AsyncTask<Void, Void, Boolean>
 	protected void onPreExecute()
 	{
 		super.onPreExecute();
-		activity.numAsyncTasks++;
+		//activity.numAsyncTasks++;
 		progressBar.setVisibility(View.VISIBLE);
 	}
 
@@ -83,14 +83,14 @@ abstract class CommonAsyncTask extends AsyncTask<Void, Void, Boolean>
 	protected final void onPostExecute(Boolean success)
 	{
 		super.onPostExecute(success);
-		if (0 == --activity.numAsyncTasks)
-		{
-			progressBar.setVisibility(View.GONE);
-		}
-		if (success)
-		{
-			activity.refreshView();
-		}
+//		if (0 == --activity.numAsyncTasks)
+//		{
+//			progressBar.setVisibility(View.GONE);
+//		}
+//		if (success)
+//		{
+//			activity.refreshView();
+//		}
 	}
 
 	

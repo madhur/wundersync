@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.google.api.services.tasks.model.Task;
 
-class AsyncLoadTasks extends CommonAsyncTask
+public class AsyncLoadTasks extends CommonAsyncTask
 {
 
 	AsyncLoadTasks(MainActivity tasksSample)
@@ -32,10 +32,10 @@ class AsyncLoadTasks extends CommonAsyncTask
 		{
 			result.add("No tasks.");
 		}
-		activity.tasksList = result;
+		//activity.tasksList = result;
 	}
 
-	static void run(MainActivity tasksSample)
+	public static void run(MainActivity tasksSample)
 	{
 		new AsyncLoadTasks(tasksSample).execute();
 	}
