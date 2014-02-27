@@ -19,7 +19,8 @@ public class AppPreferences
 		USER_NAME_GOOGLE("user_name_google"),
 		LAST_SYNC_DATE("last_sync_date"),
 		WUNDER_USERNAME("wunder_username"),
-		WUNDER_PASSWORD("wunder_password");
+		WUNDER_PASSWORD("wunder_password"),
+		TOKEN("wunder_token");
 		
 		
 		public final String key;

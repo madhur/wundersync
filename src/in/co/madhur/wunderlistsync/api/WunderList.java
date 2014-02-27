@@ -1,5 +1,7 @@
 package in.co.madhur.wunderlistsync.api;
 
+import android.util.Log;
+import in.co.madhur.wunderlistsync.App;
 import retrofit.RestAdapter;
 
 public class WunderList
@@ -18,7 +20,9 @@ public class WunderList
 	
 	public LoginResponse Login(String userName, String password)
 	{
+		Log.v(App.TAG, "Executing login");
 		LoginResponse s=service.login(userName, password);
+		Log.v(App.TAG, s.toString());
 		return s;
 	}
 	
@@ -30,6 +34,12 @@ public class WunderList
 		return null;
 	}
 	
+	public boolean IsLoginRequired(String token)
+	{
+		
+		
+		return true;
+	}
 	
 	
 	public static WunderList getInstance()

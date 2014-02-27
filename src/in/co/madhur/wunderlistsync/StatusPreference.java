@@ -54,32 +54,39 @@ public class StatusPreference extends Preference implements
 		switch(syncState.getState())
 		{
 			case ERROR:
-				setStatus(R.string.state_error);
+				setStatus(R.string.state_error, syncState.getErrorMessage());
+				setButtonLabel(R.string.sync);
+				
 				break;
 				
 			case FETCH_GOOGLE_TASKS:
 				syncBar.setIndeterminate(true);
 				setStatus(R.string.state_google_tasks);
+				setButtonLabel(R.string.stop_sync);
 				break;
 				
 			case FETCH_WUNDERLIST_TASKS:
 				syncBar.setIndeterminate(true);
 				setStatus(R.string.state_wunder_tasks);
+				setButtonLabel(R.string.stop_sync);
 				break;
 				
 			case FINISHED:
 				syncBar.setProgress(syncBar.getMax());
 				setStatus(R.string.state_finished);
+				setButtonLabel(R.string.sync);
 				break;
 				
 			case LOGIN:
 				setStatus(R.string.state_login);
 				syncBar.setIndeterminate(true);
+				setButtonLabel(R.string.stop_sync);
 				break;
 				
 			case SYNCING:
 				syncBar.setIndeterminate(false);
 				setStatus(R.string.state_syncing);
+				setButtonLabel(R.string.stop_sync);
 				break;
 			
 		}
@@ -112,11 +119,19 @@ public class StatusPreference extends Preference implements
 	}
 	
 
-	private void setStatus(int errorSync)
+	private void setStatus(int status)
 	{
-		syncStatus.setText(context.getString(errorSync));
+		syncStatus.setText(context.getString(status));
 
 	}
+	
+	private void setStatus(int status, String additionalInfo)
+	{
+		syncStatus.setText(String.format(context.getString(status), additionalInfo));
+
+	}
+	
+	
 
 	private void startSync()
 	{
