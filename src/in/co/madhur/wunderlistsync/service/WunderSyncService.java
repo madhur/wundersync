@@ -11,7 +11,6 @@ import android.util.Log;
 
 public class WunderSyncService extends Service
 {
-	WunderAPI service;
 
 	@Override
 	public IBinder onBind(Intent intent)
@@ -26,36 +25,56 @@ public class WunderSyncService extends Service
 		// TODO Auto-generated method stub
 		super.onStartCommand(intent, flags, startId);
 		
-		GetAllWunderTasks();
+		SyncWunder();
 		
 		return START_NOT_STICKY;
 	}
 
-	private void GetAllWunderTasks()
+	private void SyncWunder()
 	{
-		RestAdapter restAdapter = new RestAdapter.Builder()
-	    .setEndpoint("https://api.wunderlist.com")
-	    .build();
-
-		service = restAdapter.create(WunderAPI.class);
-		new GetWunderListTasks().execute(0);
+		
+		new WunderSyncTask().execute(0);
 		
 	
 		
 	}
 	
 	
-	private class GetWunderListTasks extends AsyncTask<Integer, Integer, Integer>
+	private class WunderSyncTask extends AsyncTask<Integer, Integer, Integer>
 	{
-		
+		@Override
+		protected void onPreExecute()
+		{
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+		}
 		
 
 		@Override
+		protected void onProgressUpdate(Integer... values)
+		{
+			// TODO Auto-generated method stub
+			super.onProgressUpdate(values);
+			
+			
+		}
+		
+		
+		@Override
 		protected Integer doInBackground(Integer... params)
 		{
-			LoginResponse s=service.login("ahuja.madhur@gmail.com", "goldi25");
-			Log.v("df", s.toString());
+			
+			
+			publishProgress(1);
+			
 			return 1;
+		}
+		
+		@Override
+		protected void onPostExecute(Integer result)
+		{
+			// TODO Auto-generated method stub
+			super.onPostExecute(result);
 		}
 		
 		

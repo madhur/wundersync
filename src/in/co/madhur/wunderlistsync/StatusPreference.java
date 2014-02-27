@@ -1,5 +1,7 @@
 package in.co.madhur.wunderlistsync;
 
+import com.squareup.otto.Subscribe;
+
 import in.co.madhur.wunderlistsync.service.WunderSyncService;
 import android.content.Context;
 import android.content.Intent;
@@ -16,12 +18,12 @@ public class StatusPreference extends Preference implements
 		View.OnClickListener
 {
 
-	Context context;
-	Button syncButton;
-	View mView;
-	ProgressBar syncBar;
-	TextView syncStatus;
-	
+	private Context context;
+	private Button syncButton;
+	private View mView;
+	private ProgressBar syncBar;
+	private TextView syncStatus;
+
 	public StatusPreference(Context context, AttributeSet attrs)
 	{
 		super(context, attrs);
@@ -39,12 +41,14 @@ public class StatusPreference extends Preference implements
 			syncButton = (Button) mView.findViewById(R.id.sync_button);
 			syncBar = (ProgressBar) mView.findViewById(R.id.details_sync_progress);
 			syncButton.setOnClickListener(this);
-			syncStatus=(TextView) mView.findViewById(R.id.details_sync_label);
+			syncStatus = (TextView) mView.findViewById(R.id.details_sync_label);
 			return mView;
 		}
 		else
 			return mView;
 	}
+	
+
 
 	@Override
 	public void onClick(View v)
@@ -62,15 +66,17 @@ public class StatusPreference extends Preference implements
 
 	}
 
+	
+
 	private void setStatus(int errorSync)
 	{
 		syncStatus.setText(context.getString(errorSync));
-		
+
 	}
 
 	private void startSync()
 	{
-		Intent syncIntent=new Intent();
+		Intent syncIntent = new Intent();
 		syncIntent.setClass(context, WunderSyncService.class);
 		context.startService(syncIntent);
 

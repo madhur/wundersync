@@ -34,5 +34,14 @@
   <string name="_3mins">3 mins</string>
   <string name="_30mins">30 mins</string>
   <string name="error_sync">Error during sync: No internet connection</string>
+  
+    <string name="gps_missing">Your phone seems to be missing Google Play Services. If it\'s a custom ROM make sure you have installed GApps package</string>
+    
+        <string name="accounts">Accounts</string>
+    <string name="icon_desc">Application icon</string>
+    <string name="title_separator_desc">Title separator</string>
+    <string name="refresh">Refresh</string>
+    <string name="error">Error</string>
+    <string name="error_format">[Error] %s</string>
 
 </resources>
