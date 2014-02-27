@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Wunder Sync</string>
+    <string name="action_settings">Settings</string>
+   
+      <string name="ui_sync_button_label_idle">Sync</string>
+      
+        <string name="ui_connected_label">Connect</string>
+  <string name="ui_connected_desc">Your account needs to be connected.</string>
+  
+   <string name="ui_enable_auto_sync_label">Auto Sync</string>
+  <string name="ui_enable_auto_sync_desc">Whether to automatically sync or not.</string>
+  
+  
+  <string name="ui_auto_backup_schedule_label">Regular schedule</string>
+  <string name="ui_auto_backup_schedule_desc">When to Sync</string>
+  
+  <string name="ui_wifi_only_label">Require Wifi</string>
+  <string name="ui_wifi_only_desc">Only backup when connected to Wifi</string>
+  
+   <string name="ui_settings_advanced_label">Advanced settings</string>
+  <string name="ui_settings_advanced_desc">Set advanced preferences.</string>
+  
+  <string name="ui_auto_backup_settings_label">Auto Sync Settings</string>
+  
+   <string name="_1h">1 h</string>
+  <string name="_2h">2 h</string>
+  <string name="_6h">6 h</string>
+  <string name="_24h">24 h</string>
+  <string name="never">Never</string>
+  
+   <string name="_1min">1 min</string>
+  <string name="_3mins">3 mins</string>
+  <string name="_30mins">30 mins</string>
+  <string name="error_sync">Error during sync: No internet connection</string>
+
+</resources>
