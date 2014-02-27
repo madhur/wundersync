@@ -40,4 +40,12 @@
     <string name="wunderlist_password">Wunderlist Password</string>
 	<string name="username">username</string>
 	<string name="password">password</string>
+	<string name="remember_credentials">Remember Credentials</string>
+	<string name="state_login">Logging in</string>
+	<string name="state_google_tasks">Fetching Google Tasks</string>
+	<string name="state_wunder_tasks">Fetching Wunder Tasks</string>
+	<string name="state_syncing" formatted="false">Syncing Tasks: %s/%s</string>
+	<string name="state_error" formatted="false">Error occurred: %s</string>
+	<string name="state_finished" formatted="false">Finished Sync</string>
+	<string name="stop_sync" formatted="false">Stop Sync</string>
 </resources>

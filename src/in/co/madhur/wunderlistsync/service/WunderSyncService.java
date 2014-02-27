@@ -1,8 +1,12 @@
 package in.co.madhur.wunderlistsync.service;
 
+import in.co.madhur.wunderlistsync.App;
 import in.co.madhur.wunderlistsync.SyncConfig;
+import in.co.madhur.wunderlistsync.TaskSyncState;
+import in.co.madhur.wunderlistsync.WunderSyncState;
 import in.co.madhur.wunderlistsync.api.LoginResponse;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
+import in.co.madhur.wunderlistsync.api.WunderList;
 import retrofit.RestAdapter;
 import android.app.Service;
 import android.content.Intent;
@@ -39,27 +43,35 @@ public class WunderSyncService extends Service
 	}
 	
 	
-	private class WunderSyncTask extends AsyncTask<SyncConfig, SyncState, SyncState>
+	private class WunderSyncTask extends AsyncTask<SyncConfig, TaskSyncState, TaskSyncState>
 	{
+		
 		@Override
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
+			App.getEventBus().register(this);
 		}
 		
 
 		@Override
-		protected void onProgressUpdate(SyncState... values)
+		protected void onProgressUpdate(TaskSyncState... values)
 		{
 			super.onProgressUpdate(values);
 			
+			App.getEventBus().post(values[0]);
 			
 		}
 		
 		
 		@Override
-		protected SyncState doInBackground(SyncConfig... params)
+		protected TaskSyncState doInBackground(SyncConfig... params)
 		{
+			publishProgress(new TaskSyncState(WunderSyncState.LOGIN));
+			
+			WunderList wunderList=WunderList.getInstance();
+			
+			
 			
 			
 			return null;
@@ -71,9 +83,11 @@ public class WunderSyncService extends Service
 		}
 		
 		@Override
-		protected void onPostExecute(SyncState result)
+		protected void onPostExecute(TaskSyncState result)
 		{
 			super.onPostExecute(result);
+			App.getEventBus().unregister(this);
+			
 		}
 
 

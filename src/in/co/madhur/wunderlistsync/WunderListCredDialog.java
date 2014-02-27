@@ -12,7 +12,7 @@ import android.view.View;
 public class WunderListCredDialog extends DialogFragment
 {
 
-	public interface NoticeDialogListener
+	public interface DialogListener
 	{
 		public void onDialogPositiveClick(DialogFragment dialog);
 

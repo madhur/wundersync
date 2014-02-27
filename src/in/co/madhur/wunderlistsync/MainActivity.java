@@ -11,6 +11,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.TasksScopes;
+import com.squareup.otto.Subscribe;
 
 import in.co.madhur.wunderlistsync.service.AppPreferences;
 import in.co.madhur.wunderlistsync.gtasks.*;
@@ -154,7 +155,8 @@ public class MainActivity extends PreferenceActivity
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-
+	
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{

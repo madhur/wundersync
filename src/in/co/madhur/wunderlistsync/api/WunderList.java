@@ -7,6 +7,9 @@ public class WunderList
 	private static WunderList wunderList;
 	private static RestAdapter restAdapter;
 	private static WunderAPI service;
+	private static String authorizationHeader;
+	private static String username, password;
+	
 	private WunderList()
 	{
 		
@@ -18,6 +21,15 @@ public class WunderList
 		LoginResponse s=service.login(userName, password);
 		return s;
 	}
+	
+	
+	public LoginResponse Login(String token)
+	{
+		//LoginResponse s=service.login(userName, password);
+		//return s;
+		return null;
+	}
+	
 	
 	
 	public static WunderList getInstance()
@@ -37,6 +49,16 @@ public class WunderList
 		else
 			return wunderList;
 		
+	}
+
+	public String getAuthorizationHeader()
+	{
+		return authorizationHeader;
+	}
+
+	public void setAuthorizationHeader(String authorizationHeader)
+	{
+		this.authorizationHeader = authorizationHeader;
 	}
 
 }

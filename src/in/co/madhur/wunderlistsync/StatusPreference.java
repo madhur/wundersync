@@ -48,6 +48,45 @@ public class StatusPreference extends Preference implements
 			return mView;
 	}
 	
+	@Subscribe
+	public void PublishProgress(TaskSyncState syncState)
+	{
+		switch(syncState.getState())
+		{
+			case ERROR:
+				setStatus(R.string.state_error);
+				break;
+				
+			case FETCH_GOOGLE_TASKS:
+				syncBar.setIndeterminate(true);
+				setStatus(R.string.state_google_tasks);
+				break;
+				
+			case FETCH_WUNDERLIST_TASKS:
+				syncBar.setIndeterminate(true);
+				setStatus(R.string.state_wunder_tasks);
+				break;
+				
+			case FINISHED:
+				syncBar.setProgress(syncBar.getMax());
+				setStatus(R.string.state_finished);
+				break;
+				
+			case LOGIN:
+				setStatus(R.string.state_login);
+				syncBar.setIndeterminate(true);
+				break;
+				
+			case SYNCING:
+				syncBar.setIndeterminate(false);
+				setStatus(R.string.state_syncing);
+				break;
+			
+		}
+		
+		
+	}
+
 
 
 	@Override
@@ -66,6 +105,11 @@ public class StatusPreference extends Preference implements
 
 	}
 
+	private void setButtonLabel(int buttonLabel)
+	{
+		syncButton.setText(context.getString(buttonLabel));
+		
+	}
 	
 
 	private void setStatus(int errorSync)
