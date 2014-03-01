@@ -49,4 +49,7 @@
 	<string name="state_finished" formatted="false">Finished Sync</string>
 	<string name="stop_sync" formatted="false">Stop Sync</string>
 	<string name="sync" formatted="false">Sync</string>
+	<string name="idle">Idle</string>
+	<string name="error_empty_cred">You must provide both username/password to continue</string>
+	<string name="missing_wunderlist_cred">You must set Wunderlist credentials to sync</string>
 </resources>

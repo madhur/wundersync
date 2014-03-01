@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.preference.Preference;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,17 +19,22 @@ public class StatusPreference extends Preference implements
 		View.OnClickListener
 {
 
-	private Context context;
+	private MainActivity mainActivity;
 	private Button syncButton;
 	private View mView;
 	private ProgressBar syncBar;
-	private TextView syncStatus;
+	private TextView syncStatus, statusLabel;
 
-	public StatusPreference(Context context, AttributeSet attrs)
+	public StatusPreference(MainActivity context)
 	{
-		super(context, attrs);
-		this.context = context;
+		super(context);
+		this.mainActivity = context;
+		this.setSelectable(false);
+		this.setOrder(0);
+		App.getEventBus().register(this);
 	}
+	
+	
 
 	@Override
 	protected View onCreateView(ViewGroup parent)
@@ -36,12 +42,13 @@ public class StatusPreference extends Preference implements
 		super.onCreateView(parent);
 		if (mView == null)
 		{
-			LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			LayoutInflater layoutInflater = (LayoutInflater) mainActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			mView = layoutInflater.inflate(R.layout.status, null);
 			syncButton = (Button) mView.findViewById(R.id.sync_button);
 			syncBar = (ProgressBar) mView.findViewById(R.id.details_sync_progress);
 			syncButton.setOnClickListener(this);
 			syncStatus = (TextView) mView.findViewById(R.id.details_sync_label);
+			statusLabel=(TextView) mView.findViewById(R.id.status_label);
 			return mView;
 		}
 		else
@@ -51,12 +58,13 @@ public class StatusPreference extends Preference implements
 	@Subscribe
 	public void PublishProgress(TaskSyncState syncState)
 	{
+		Log.v(App.TAG, "PublishProgress");
 		switch(syncState.getState())
 		{
 			case ERROR:
 				setStatus(R.string.state_error, syncState.getErrorMessage());
 				setButtonLabel(R.string.sync);
-				
+				syncBar.setIndeterminate(false);
 				break;
 				
 			case FETCH_GOOGLE_TASKS:
@@ -101,12 +109,13 @@ public class StatusPreference extends Preference implements
 	{
 		if (v == syncButton)
 		{
-			if (Connection.isNetworkGood(context))
+			if (!Connection.isNetworkGood(mainActivity))
 			{
-				startSync();
-			}
-			else
 				setStatus(R.string.error_sync);
+				return;
+			}
+			
+			mainActivity.StartSync();
 
 		}
 
@@ -114,31 +123,23 @@ public class StatusPreference extends Preference implements
 
 	private void setButtonLabel(int buttonLabel)
 	{
-		syncButton.setText(context.getString(buttonLabel));
+		syncButton.setText(mainActivity.getString(buttonLabel));
 		
 	}
 	
 
 	private void setStatus(int status)
 	{
-		syncStatus.setText(context.getString(status));
-
+		syncStatus.setText(mainActivity.getString(status));
+		statusLabel.setText(mainActivity.getString(status));
 	}
 	
 	private void setStatus(int status, String additionalInfo)
 	{
-		syncStatus.setText(String.format(context.getString(status), additionalInfo));
+		syncStatus.setText(String.format(mainActivity.getString(status), additionalInfo));
 
 	}
 	
-	
 
-	private void startSync()
-	{
-		Intent syncIntent = new Intent();
-		syncIntent.setClass(context, WunderSyncService.class);
-		context.startService(syncIntent);
-
-	}
 
 }

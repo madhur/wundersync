@@ -1,14 +1,19 @@
-package in.co.madhur.wunderlistsync.service;
+package in.co.madhur.wunderlistsync;
+
+import java.io.UnsupportedEncodingException;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
+import android.util.Base64;
+import android.util.Log;
 
 public class AppPreferences
 {
 	private Context context;
 	public SharedPreferences sharedPreferences;
+	String defValue="";
 	
 	public enum Keys
 	{
@@ -20,7 +25,8 @@ public class AppPreferences
 		LAST_SYNC_DATE("last_sync_date"),
 		WUNDER_USERNAME("wunder_username"),
 		WUNDER_PASSWORD("wunder_password"),
-		TOKEN("wunder_token");
+		TOKEN("wunder_token"),
+		WUNDER_CREDENTIALS("wunder_credentials");
 		
 		
 		public final String key;
@@ -44,7 +50,7 @@ public class AppPreferences
 	
 	public String GetMetadata(Keys key)
 	{
-		String defValue="";
+		
 		return sharedPreferences.getString(key.key,defValue);
 		
 	}
@@ -68,6 +74,71 @@ public class AppPreferences
 		Editor edit=sharedPreferences.edit();
 		edit.putString(Keys.USER_NAME_GOOGLE.key, username);
 		edit.commit();
+		
+	}
+	
+	public void SetWunderUserName(String username)
+	{
+		Editor edit=sharedPreferences.edit();
+		edit.putString(Keys.WUNDER_USERNAME.key, username);
+		edit.commit();
+		
+	}
+	
+	public String GetWunderUserName()
+	{
+		return sharedPreferences.getString(Keys.WUNDER_USERNAME.key, defValue);
+	}
+	
+	public String GetWunderPassword()
+	{
+		
+		String encPassword=GetMetadata(Keys.WUNDER_PASSWORD);
+		String password = null; 
+		
+		byte[] data = Base64.decode(encPassword, Base64.DEFAULT);
+		try
+		{
+			password = new String(data, "UTF-8");
+		}
+		catch (UnsupportedEncodingException e1)
+		{
+			Log.e(App.TAG, e1.getMessage());
+		}
+		
+		return password;
+		
+	}
+	
+	public void SetWunderPassword(String password)
+	{
+		byte[] data = null;
+		String base64 = null;
+		try
+		{
+			data = password.getBytes("UTF-8");
+			base64 = Base64.encodeToString(data, Base64.DEFAULT);
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			Log.e(App.TAG, e.getMessage());
+		}
+		
+		Editor edit=sharedPreferences.edit();
+		edit.putString(Keys.WUNDER_PASSWORD.key, base64);
+		edit.commit();
+		
+	}
+	
+	public boolean isEmptyCred()
+	{
+		String userName=GetMetadata(Keys.WUNDER_USERNAME);
+		String password=GetMetadata(Keys.WUNDER_PASSWORD);
+		
+		if(userName.length()==0 || password.length()==0)
+			return true;
+		
+		return false;
 		
 	}
 	

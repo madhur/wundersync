@@ -1,5 +1,6 @@
 package in.co.madhur.wunderlistsync;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,24 +14,35 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.TasksScopes;
 import com.squareup.otto.Subscribe;
 
-import in.co.madhur.wunderlistsync.service.AppPreferences;
+import in.co.madhur.wunderlistsync.AppPreferences.Keys;
+import in.co.madhur.wunderlistsync.WunderListCredDialog.DialogListener;
 import in.co.madhur.wunderlistsync.gtasks.*;
-import in.co.madhur.wunderlistsync.service.AppPreferences.Keys;
+import in.co.madhur.wunderlistsync.service.WunderSyncService;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnShowListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.support.v4.app.DialogFragment;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -58,9 +70,13 @@ public class MainActivity extends PreferenceActivity
 		addPreferencesFromResource(R.xml.preferences);
 		// setContentView(R.layout.calendarlist);
 		appPreferences = new AppPreferences(this);
+		statusPrefence = new StatusPreference(this);
 
+		getPreferenceScreen().addPreference(statusPrefence);
 		// listView = (ListView) findViewById(R.id.list);
 		// Google Accounts
+		
+		
 
 	}
 
@@ -68,18 +84,78 @@ public class MainActivity extends PreferenceActivity
 	protected void onResume()
 	{
 		super.onResume();
-//
-//		if (checkGooglePlayServicesAvailable())
-//		{
-//			haveGooglePlayServices();
-//		}
-
+		//
+		// if (checkGooglePlayServicesAvailable())
+		// {
+		// haveGooglePlayServices();
+		// }
+		App.getEventBus().register(statusPrefence);
 		SetListeners();
+	} 
+	
+	@Override
+	protected void onPause()
+	{
+		// TODO Auto-generated method stub
+		super.onPause();
+		App.getEventBus().unregister(statusPrefence);
+	}
+	
+	@Override
+	protected void onDestroy()
+	{
+		super.onDestroy();
 	}
 
 	/**
 	 * 
 	 */
+
+	public void StartSync()
+	{
+		
+		if(appPreferences.isEmptyCred())
+		{
+			showDialog(Dialogs.MISSING_CREDENTIALS.ordinal());
+			return;
+		}
+		
+		
+		Intent syncIntent = new Intent();
+		syncIntent.setClass(this, WunderSyncService.class);
+		this.startService(syncIntent);
+
+	}
+
+	@Override
+	protected Dialog onCreateDialog(final int id)
+	{
+		String title = null, msg = null;
+		switch (Dialogs.values()[id])
+		{
+			case MISSING_CREDENTIALS:
+				title=getString(R.string.app_name);
+				msg=getString(R.string.missing_wunderlist_cred);
+				break;
+
+			default:
+				return null;
+		}
+		return createMessageDialog(title, msg);
+	}
+
+	private Dialog createMessageDialog(String title, String msg)
+	{
+		return new AlertDialog.Builder(this).setTitle(title).setMessage(msg).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
+		{
+			@Override
+			public void onClick(DialogInterface dialog, int which)
+			{
+				dialog.cancel();
+			}
+		}).create();
+	}
+
 	private void SetListeners()
 	{
 		findPreference(Keys.CONNECTED.key).setOnPreferenceChangeListener(new OnPreferenceChangeListener()
@@ -102,10 +178,7 @@ public class MainActivity extends PreferenceActivity
 					}
 
 					credential = GoogleAccountCredential.usingOAuth2(getBaseContext(), Collections.singleton(TasksScopes.TASKS));
-					
-					
 
-				
 					if (TextUtils.isEmpty(appPreferences.GetUserName()))
 					{
 						try
@@ -124,23 +197,101 @@ public class MainActivity extends PreferenceActivity
 					}
 					else
 					{
-						
+
 						credential.setSelectedAccountName(appPreferences.GetUserName());
 						service = new com.google.api.services.tasks.Tasks.Builder(httpTransport, jsonFactory, credential).setApplicationName("WunderSync").build();
 						preference.setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
-						//getString(R.string.)
+						// getString(R.string.)
 					}
 
 				}
 				else
 				{
 					credential = GoogleAccountCredential.usingOAuth2(getBaseContext(), Collections.singleton(TasksScopes.TASKS));
-					
+
 					credential.setSelectedAccountName("");
 					appPreferences.SetUserName("");
 					preference.setSummary(getString(R.string.not_connected));
 					appPreferences.SetMetadata(Keys.LAST_SYNC_DATE, "");
 				}
+
+				return true;
+			}
+		});
+
+		findPreference(Keys.WUNDER_CREDENTIALS.key).setOnPreferenceClickListener(new OnPreferenceClickListener()
+		{
+
+			@Override
+			public boolean onPreferenceClick(Preference preference)
+			{
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				LayoutInflater inflater = (LayoutInflater) getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+				// Inflate and set the layout for the dialog
+				// Pass null as the parent view because its going in the dialog
+				// layout
+				final View loginView = inflater.inflate(R.layout.login, null);
+
+				builder.setMessage(R.string.preferences_credentials_desc).setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, int id)
+					{
+						// User cancelled the dialog
+					}
+				}).setView(loginView);
+
+				AlertDialog dialog = builder.create();
+
+				dialog.setOnShowListener(new OnShowListener()
+				{
+					EditText userName = (EditText) loginView.findViewById(R.id.username);
+					EditText password = (EditText) loginView.findViewById(R.id.password);
+
+					@Override
+					public void onShow(final DialogInterface dialog)
+					{
+						Button b = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+						userName.setText(appPreferences.GetWunderUserName());
+						
+						password.setText(appPreferences.GetWunderPassword());
+						
+						b.setOnClickListener(new View.OnClickListener()
+						{
+
+							@Override
+							public void onClick(View view)
+							{
+								
+
+								if (userName.getText().length() == 0
+										|| password.getText().length() == 0)
+								{
+									new AlertDialog.Builder(MainActivity.this).setTitle(getString(R.string.app_name)).setMessage(getString(R.string.error_empty_cred)).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
+									{
+										public void onClick(DialogInterface dialog, int which)
+										{
+
+										}
+									})
+
+									.show();
+
+									return;
+
+								}
+
+								
+								appPreferences.SetMetadata(Keys.WUNDER_USERNAME, userName.getText().toString());
+								appPreferences.SetMetadata(Keys.WUNDER_PASSWORD, password.getText().toString());
+
+								dialog.dismiss();
+							}
+						});
+
+					}
+				});
+				dialog.show();
 
 				return true;
 			}
@@ -155,8 +306,7 @@ public class MainActivity extends PreferenceActivity
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-	
-	
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -166,7 +316,7 @@ public class MainActivity extends PreferenceActivity
 			case Consts.REQUEST_GOOGLE_PLAY_SERVICES:
 				if (resultCode == Activity.RESULT_OK)
 				{
-					//haveGooglePlayServices();
+					// haveGooglePlayServices();
 					findPreference(Keys.CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
 				}
 				else
@@ -178,7 +328,7 @@ public class MainActivity extends PreferenceActivity
 				if (resultCode == Activity.RESULT_OK)
 				{
 					// AsyncLoadTasks.run(this);
-					
+
 					findPreference(Keys.CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
 
 				}

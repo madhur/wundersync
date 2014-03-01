@@ -1,13 +1,14 @@
 package in.co.madhur.wunderlistsync.service;
 
 import in.co.madhur.wunderlistsync.App;
+import in.co.madhur.wunderlistsync.AppPreferences;
 import in.co.madhur.wunderlistsync.SyncConfig;
 import in.co.madhur.wunderlistsync.TaskSyncState;
 import in.co.madhur.wunderlistsync.WunderSyncState;
+import in.co.madhur.wunderlistsync.AppPreferences.Keys;
 import in.co.madhur.wunderlistsync.api.LoginResponse;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
 import in.co.madhur.wunderlistsync.api.WunderList;
-import in.co.madhur.wunderlistsync.service.AppPreferences.Keys;
 import retrofit.RestAdapter;
 import android.app.Service;
 import android.content.Intent;
@@ -55,7 +56,7 @@ public class WunderSyncService extends Service
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
-			App.getEventBus().register(this);
+			
 		}
 
 		@Override
@@ -79,18 +80,17 @@ public class WunderSyncService extends Service
 
 				if (wunderList.IsLoginRequired(params[0].getToken()))
 				{
-						Log.v(App.TAG, "Logging in...");
-						wunderList.Login(config.getUsername(), config.getPassword());
+					Log.v(App.TAG, "Logging in...");
+					wunderList.Login(config.getUsername(), config.getPassword());
 				}
 			}
-			catch (Exception e)
+			catch (AuthException e)
 			{
+				Log.v(App.TAG, "AuthException");
 				return new TaskSyncState(e.getMessage());
 
 			}
-			return null;
-
-			// publishProgress(1);
+			return new TaskSyncState(WunderSyncState.FINISHED);
 
 		}
 
@@ -98,9 +98,11 @@ public class WunderSyncService extends Service
 		protected void onPostExecute(TaskSyncState result)
 		{
 			super.onPostExecute(result);
-			App.getEventBus().unregister(this);
+			App.getEventBus().post(result);
 
 		}
+		
+		
 
 	}
 

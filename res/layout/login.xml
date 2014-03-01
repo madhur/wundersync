@@ -25,10 +25,6 @@
         android:fontFamily="sans-serif"
         android:hint="@string/password"/>
     
-    <CheckBox
-        android:id="@+id/remembercredentials"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:checked="true"
-        android:text="@string/remember_credentials" />
+    
 
 </LinearLayout>

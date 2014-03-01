@@ -1,6 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <in.co.madhur.wunderlistsync.StatusPreference   android:key="statusPreference" />
+   
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="connected"
@@ -35,15 +35,12 @@
     </PreferenceScreen>
 
     
-    <PreferenceScreen
+    <Preference
         android:key="wunder_credentials"
-        android:title="@string/preferences_credentials" android:summary="preferences_credentials_desc">
+        android:title="@string/preferences_credentials" android:summary="@string/preferences_credentials_desc">
         
-        <EditTextPreference android:key="wunderlist_username" android:dialogTitle="@string/wunderlist_password"  android:title="@string/wunderlist_username"></EditTextPreference>
         
-        <EditTextPreference android:key="wunderlist_password" android:dialogTitle="@string/wunderlist_password" android:title="@string/wunderlist_password"></EditTextPreference>
-        
-   </PreferenceScreen>
+   </Preference>
 
 
 

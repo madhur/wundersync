@@ -21,7 +21,7 @@
         />
 
         <TextView
-          android:id="@+id/status_label" android:text="test"
+          android:id="@+id/status_label" android:text="@string/idle"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content"
           android:layout_toRightOf="@id/status_icon"
@@ -75,6 +75,8 @@
             android:id="@+id/sync_button"
             android:text="@string/ui_sync_button_label_idle"
             android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:gravity="center"
           />
 
