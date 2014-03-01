@@ -2,10 +2,12 @@ package in.co.madhur.wunderlistsync;
 
 import java.io.UnsupportedEncodingException;
 
+import android.R.string;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
@@ -94,14 +96,22 @@ public class AppPreferences
 	{
 		
 		String encPassword=GetMetadata(Keys.WUNDER_PASSWORD);
+		if(TextUtils.isEmpty(encPassword))
+			return defValue;
+		
 		String password = null; 
 		
-		byte[] data = Base64.decode(encPassword, Base64.DEFAULT);
+		
 		try
 		{
+			byte[] data = Base64.decode(encPassword, Base64.DEFAULT);
 			password = new String(data, "UTF-8");
 		}
 		catch (UnsupportedEncodingException e1)
+		{
+			Log.e(App.TAG, e1.getMessage());
+		}
+		catch(IllegalArgumentException e1)
 		{
 			Log.e(App.TAG, e1.getMessage());
 		}
@@ -135,7 +145,7 @@ public class AppPreferences
 		String userName=GetMetadata(Keys.WUNDER_USERNAME);
 		String password=GetMetadata(Keys.WUNDER_PASSWORD);
 		
-		if(userName.length()==0 || password.length()==0)
+		if(userName.trim().length()==0 || password.trim().length()==0)
 			return true;
 		
 		return false;

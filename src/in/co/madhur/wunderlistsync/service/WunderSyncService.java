@@ -1,24 +1,33 @@
 package in.co.madhur.wunderlistsync.service;
 
+import java.util.List;
+
+import com.google.api.services.tasks.TasksScopes;
+
 import in.co.madhur.wunderlistsync.App;
 import in.co.madhur.wunderlistsync.AppPreferences;
 import in.co.madhur.wunderlistsync.SyncConfig;
 import in.co.madhur.wunderlistsync.TaskSyncState;
 import in.co.madhur.wunderlistsync.WunderSyncState;
 import in.co.madhur.wunderlistsync.AppPreferences.Keys;
+import in.co.madhur.wunderlistsync.api.AuthError;
+import in.co.madhur.wunderlistsync.api.AuthException;
 import in.co.madhur.wunderlistsync.api.LoginResponse;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
 import in.co.madhur.wunderlistsync.api.WunderList;
+import in.co.madhur.wunderlistsync.api.WunderTask;
 import retrofit.RestAdapter;
 import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.provider.CalendarContract.SyncState;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class WunderSyncService extends Service
 {
+	AppPreferences preferences;
 
 	@Override
 	public IBinder onBind(Intent intent)
@@ -38,10 +47,10 @@ public class WunderSyncService extends Service
 
 	private void SyncWunder()
 	{
-		AppPreferences preferences = new AppPreferences(this);
+		preferences = new AppPreferences(this);
 		SyncConfig config = new SyncConfig(true, true, null);
-		config.setUsername(preferences.GetUserName());
-		config.setPassword(preferences.GetMetadata(Keys.WUNDER_PASSWORD));
+		config.setUsername(preferences.GetWunderUserName());
+		config.setPassword(preferences.GetWunderPassword());
 		config.setToken(preferences.GetMetadata(Keys.TOKEN));
 		Log.v(App.TAG, "Executing task");
 		new WunderSyncTask().execute(config);
@@ -56,7 +65,7 @@ public class WunderSyncService extends Service
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
-			
+
 		}
 
 		@Override
@@ -72,17 +81,38 @@ public class WunderSyncService extends Service
 		protected TaskSyncState doInBackground(SyncConfig... params)
 		{
 			SyncConfig config = params[0];
+			LoginResponse loginResponse;
+			WunderList wunderList = null;
+
 			try
 			{
 				publishProgress(new TaskSyncState(WunderSyncState.LOGIN));
 
-				WunderList wunderList = WunderList.getInstance();
-
-				if (wunderList.IsLoginRequired(params[0].getToken()))
+				if (!TextUtils.isEmpty(params[0].getToken()))
 				{
-					Log.v(App.TAG, "Logging in...");
-					wunderList.Login(config.getUsername(), config.getPassword());
+					
+					try
+					{
+						wunderList = WunderList.getInstance(params[0].getToken());
+					}
+					catch (AuthException e)
+					{
+						Log.v(App.TAG, "Old token expired, getting new token...");
+						if (e.getErrorCode() == AuthError.OLD_TOKEN_EXPIRED)
+						{
+							wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+							preferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
+							Log.v(App.TAG, "New token: " + wunderList.GetToken());
+						}
+
+					}
 				}
+
+				publishProgress(new TaskSyncState(WunderSyncState.FETCH_WUNDERLIST_TASKS));
+				List<WunderTask> tasks = wunderList.GetTasks();
+				
+				Log.v(App.TAG, String.valueOf(tasks.size()));
+				
 			}
 			catch (AuthException e)
 			{
@@ -101,8 +131,6 @@ public class WunderSyncService extends Service
 			App.getEventBus().post(result);
 
 		}
-		
-		
 
 	}
 

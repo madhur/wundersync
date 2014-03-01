@@ -281,9 +281,8 @@ public class MainActivity extends PreferenceActivity
 
 								}
 
-								
-								appPreferences.SetMetadata(Keys.WUNDER_USERNAME, userName.getText().toString());
-								appPreferences.SetMetadata(Keys.WUNDER_PASSWORD, password.getText().toString());
+								appPreferences.SetWunderUserName(userName.getText().toString());
+								appPreferences.SetWunderPassword(password.getText().toString());
 
 								dialog.dismiss();
 							}

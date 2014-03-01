@@ -1,8 +1,10 @@
 package in.co.madhur.wunderlistsync.api;
 
+import java.util.List;
+
 import android.util.Log;
 import in.co.madhur.wunderlistsync.App;
-import in.co.madhur.wunderlistsync.service.AuthException;
+import in.co.madhur.wunderlistsync.Consts;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 
@@ -12,14 +14,16 @@ public class WunderList
 	private static RestAdapter restAdapter;
 	private static WunderAPI service;
 	private static String authorizationHeader;
-	private static String username, password;
-
+	//private static String username, password;
+	private static String token;
+	
 	private WunderList()
 	{
 
 	}
 
-	public LoginResponse Login(String userName, String password) throws AuthException
+	// The caller should save the token in preference
+	private static  LoginResponse Login(String userName, String password) throws AuthException
 	{
 		Log.v(App.TAG, "Executing login");
 		LoginResponse response = null; 
@@ -30,36 +34,92 @@ public class WunderList
 		catch (RetrofitError e)
 		{
 			if(e.getResponse().getStatus()==403)
-				throw new AuthException();
+				throw new AuthException(Consts.AUTH_ERROR);
+			if(e.getResponse().getStatus()==404)
+				throw new AuthException(Consts.USER_NOT_FOUND);
 			
 			Log.v(App.TAG, response.toString());
 		}
+		
+		// Save the token 
+		token=response.getToken();
+		
 		return response;
 	}
 
-	public LoginResponse Login(String token)
+	public void SetToken(String newToken)
 	{
-		// LoginResponse s=service.login(userName, password);
-		// return s;
-		return null;
+		token=newToken;
+		
+	}
+	
+	public String GetToken()
+	{
+		return token;
 	}
 
-	public boolean IsLoginRequired(String token)
+	private static boolean IsLoginRequired() throws AuthException
 	{
-
-		return true;
+		Me userInfo;
+		
+		try
+		{
+			// Try to get data using provided token
+			userInfo=service.getUserInfo(token);
+		}
+		catch(RetrofitError e)
+		{
+			if(e.getResponse().getStatus()==401)
+			{
+				return true;
+			}
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public List<WunderTask> GetTasks()
+	{
+		List<WunderTask> tasks;
+		
+		tasks=service.GetWunderTasks(token);
+		
+		return tasks;
 	}
 
-	public static WunderList getInstance()
+	public static WunderList getInstance(String newToken) throws AuthException
 	{
 		if (wunderList == null)
 		{
-
 			restAdapter = new RestAdapter.Builder().setEndpoint(APIConsts.API_URL).build();
-
 			service = restAdapter.create(WunderAPI.class);
-
 			wunderList = new WunderList();
+			token=newToken;
+			
+			if(IsLoginRequired())
+				throw new AuthException(AuthError.OLD_TOKEN_EXPIRED);
+			
+			return wunderList;
+		}
+		else
+			return wunderList;
+
+	}
+	
+	public static WunderList getInstance(String userName, String password) throws AuthException
+	{
+		if (wunderList == null)
+		{
+			restAdapter = new RestAdapter.Builder().setEndpoint(APIConsts.API_URL).build();
+			service = restAdapter.create(WunderAPI.class);
+			wunderList = new WunderList();
+			
+			// Since token is not provided, make explicit call to login which will set the token internally.
+			// Callers should get the token by calling wunderlist.getToken();
+			Login(userName, password);
+			
 			return wunderList;
 		}
 		else

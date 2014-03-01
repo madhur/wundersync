@@ -10,5 +10,8 @@ public class Consts
 	public static final int REQUEST_ACCOUNT_PICKER = 2;
 	
 	public static final String AUTH_ERROR="Authentication error, please check wunderlist username/password";
+	
+	public static final String USER_NOT_FOUND="User not found, check your wunderlist username";
 
 }
+

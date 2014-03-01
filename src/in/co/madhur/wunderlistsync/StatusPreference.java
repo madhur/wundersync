@@ -31,7 +31,7 @@ public class StatusPreference extends Preference implements
 		this.mainActivity = context;
 		this.setSelectable(false);
 		this.setOrder(0);
-		App.getEventBus().register(this);
+		
 	}
 	
 	
@@ -82,6 +82,7 @@ public class StatusPreference extends Preference implements
 			case FINISHED:
 				syncBar.setProgress(syncBar.getMax());
 				setStatus(R.string.state_finished);
+				syncBar.setIndeterminate(false);
 				setButtonLabel(R.string.sync);
 				break;
 				
