@@ -11,6 +11,7 @@ public class SyncConfig
 	private String username;
 	private String password;
 	private String token;
+	private String googleAccount;
 	
 	public SyncConfig(boolean isOneWay, boolean isManual, Date lastSyncDate)
 	{
@@ -79,5 +80,17 @@ public class SyncConfig
 	public void setToken(String token)
 	{
 		this.token = token;
+	}
+
+
+	public String getGoogleAccount()
+	{
+		return googleAccount;
+	}
+
+
+	public void setGoogleAccount(String googleAccount)
+	{
+		this.googleAccount = googleAccount;
 	}
 }

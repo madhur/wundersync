@@ -33,7 +33,6 @@ public final class WunderSyncContract
 		public static final String OLD_TABLE_NAME="googletasks_old";
 		
 		public static final String ID = "id";
-		public static final String LIST_ID = "list_id";
 		public static final String TITLE = "title";
 		public static final String STATUS = "status";
 		public static final String DUE = "due";

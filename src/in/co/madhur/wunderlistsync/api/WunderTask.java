@@ -79,6 +79,9 @@ public class WunderTask
 
 	public Object getCompleted_by_id()
 	{
+		if(TextUtils.isEmpty((CharSequence) completed_by_id))
+			return "";
+		
 		return completed_by_id;
 	}
 

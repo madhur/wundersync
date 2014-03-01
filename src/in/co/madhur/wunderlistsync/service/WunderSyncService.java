@@ -1,5 +1,6 @@
 package in.co.madhur.wunderlistsync.service;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,6 +27,7 @@ import in.co.madhur.wunderlistsync.database.DbHelper;
 import retrofit.RestAdapter;
 import android.app.Service;
 import android.content.Intent;
+import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.provider.CalendarContract.SyncState;
@@ -57,11 +59,14 @@ public class WunderSyncService extends Service
 	{
 		preferences = new AppPreferences(this);
 		SyncConfig config = new SyncConfig(true, true, null);
+		
 		config.setUsername(preferences.GetWunderUserName());
 		config.setPassword(preferences.GetWunderPassword());
 		config.setToken(preferences.GetMetadata(Keys.TOKEN));
+		config.setGoogleAccount(preferences.GetUserName());
+		
 		Log.v(App.TAG, "Executing task");
-		new WunderSyncTask().execute(config);
+		new WunderSyncTask(config).execute(config);
 
 	}
 
@@ -72,13 +77,21 @@ public class WunderSyncService extends Service
 		final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
 		final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
 		private GoogleAccountCredential credential;
-
+		SyncConfig config;
+		
+		public WunderSyncTask(SyncConfig config)
+		{
+			this.config=config;
+		}
+		
+		
 		@Override
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
-			
+
 			credential = GoogleAccountCredential.usingOAuth2(getBaseContext(), Collections.singleton(TasksScopes.TASKS));
+			credential.setSelectedAccountName(config.getGoogleAccount());
 			taskService = new com.google.api.services.tasks.Tasks.Builder(httpTransport, jsonFactory, credential).setApplicationName("WunderSync").build();
 
 		}
@@ -98,7 +111,7 @@ public class WunderSyncService extends Service
 			SyncConfig config = params[0];
 			LoginResponse loginResponse;
 			WunderList wunderList = null;
-			
+			DbHelper dbHelper = null;
 
 			try
 			{
@@ -106,7 +119,7 @@ public class WunderSyncService extends Service
 
 				if (!TextUtils.isEmpty(params[0].getToken()))
 				{
-					
+
 					try
 					{
 						wunderList = WunderList.getInstance(params[0].getToken());
@@ -118,7 +131,8 @@ public class WunderSyncService extends Service
 						{
 							wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
 							preferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
-							Log.v(App.TAG, "New token: " + wunderList.GetToken());
+							Log.v(App.TAG, "New token: "
+									+ wunderList.GetToken());
 						}
 
 					}
@@ -126,27 +140,55 @@ public class WunderSyncService extends Service
 
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_WUNDERLIST_TASKS));
 				List<WunderTask> tasks = wunderList.GetTasks();
-				
-				DbHelper dbHelper=DbHelper.getInstance(WunderSyncService.this);
-				
+
+				dbHelper = DbHelper.getInstance(WunderSyncService.this);
+
+				// Try dropping the tables if previosuly exists. This can happen
+				// if previous sync was incorrectly aborted
+				try
+				{
+					Log.d(App.TAG, "Truncating previous tables");
+					dbHelper.TruncateTables();
+				}
+				catch (SQLiteException e)
+				{
+					// Silently catch and continue, since this is not an error
+					Log.d(App.TAG, e.getMessage());
+				}
+
 				Log.d(App.TAG, "Writing wunder tasks to db");
 				dbHelper.WriteWunderTasks(tasks);
+
+				Log.d(App.TAG, "moving data to told");
+				dbHelper.MoveData();
 				
-				Log.d(App.TAG, "renaminmg tables");
-				dbHelper.RenameTables();
+				Log.d(App.TAG, "Truncating tables");
+				dbHelper.TruncateTables();
+
+				// Publish UI update to google progress
+				publishProgress(new TaskSyncState(WunderSyncState.FETCH_GOOGLE_TASKS));
 				
-				
-				List<Task> gTasks = taskService.tasks().list("@default").setFields("items/title").execute().getItems();
-				
+				List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
+
+				Log.d(App.TAG, "Writing google tasks to db");
 				dbHelper.writeGoogleTasks(gTasks);
-				
-				
+
 			}
 			catch (Exception e)
 			{
-				Log.v(App.TAG, "Exception");
-				return new TaskSyncState(e.getMessage());
+				Log.e(App.TAG, e.getClass().getName());
+				
+				if(e.getMessage()!=null)
+				{
+					Log.e(App.TAG, e.getMessage());
+					return new TaskSyncState(e.getMessage());
+				}
 
+			}
+			finally
+			{
+
+				
 			}
 			return new TaskSyncState(WunderSyncState.FINISHED);
 
@@ -157,6 +199,8 @@ public class WunderSyncService extends Service
 		{
 			super.onPostExecute(result);
 			App.getEventBus().post(result);
+			
+			WunderSyncService.this.stopSelf();
 
 		}
 

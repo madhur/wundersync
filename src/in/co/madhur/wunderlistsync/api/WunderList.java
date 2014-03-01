@@ -73,7 +73,7 @@ public class WunderList
 			{
 				return true;
 			}
-			
+			Log.e(App.TAG, "IsLoginRequired: Status: " + e.getResponse().getStatus());
 			return true;
 		}
 		

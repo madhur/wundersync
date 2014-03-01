@@ -19,4 +19,7 @@ public interface WunderAPI
 	
 	@GET(value = "/me/tasks")
 	List<WunderTask> GetWunderTasks(@Header("Authorization") String authorization);
+	
+	@POST(value = "/me/tasks")
+	List<WunderTask> CreateWunderTask(@Header("Authorization") String authorization, String listId, String title,  String isStarred, String dueDate);
 }
