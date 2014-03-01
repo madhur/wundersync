@@ -1,8 +1,14 @@
 package in.co.madhur.wunderlistsync.service;
 
+import java.util.Collections;
 import java.util.List;
 
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.TasksScopes;
+import com.google.api.services.tasks.model.Task;
 
 import in.co.madhur.wunderlistsync.App;
 import in.co.madhur.wunderlistsync.AppPreferences;
@@ -16,12 +22,14 @@ import in.co.madhur.wunderlistsync.api.LoginResponse;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
 import in.co.madhur.wunderlistsync.api.WunderList;
 import in.co.madhur.wunderlistsync.api.WunderTask;
+import in.co.madhur.wunderlistsync.database.DbHelper;
 import retrofit.RestAdapter;
 import android.app.Service;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.provider.CalendarContract.SyncState;
+import android.test.RenamingDelegatingContext;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -60,11 +68,18 @@ public class WunderSyncService extends Service
 	private class WunderSyncTask extends
 			AsyncTask<SyncConfig, TaskSyncState, TaskSyncState>
 	{
+		com.google.api.services.tasks.Tasks taskService;
+		final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
+		final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+		private GoogleAccountCredential credential;
 
 		@Override
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
+			
+			credential = GoogleAccountCredential.usingOAuth2(getBaseContext(), Collections.singleton(TasksScopes.TASKS));
+			taskService = new com.google.api.services.tasks.Tasks.Builder(httpTransport, jsonFactory, credential).setApplicationName("WunderSync").build();
 
 		}
 
@@ -83,6 +98,7 @@ public class WunderSyncService extends Service
 			SyncConfig config = params[0];
 			LoginResponse loginResponse;
 			WunderList wunderList = null;
+			
 
 			try
 			{
@@ -111,12 +127,24 @@ public class WunderSyncService extends Service
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_WUNDERLIST_TASKS));
 				List<WunderTask> tasks = wunderList.GetTasks();
 				
-				Log.v(App.TAG, String.valueOf(tasks.size()));
+				DbHelper dbHelper=DbHelper.getInstance(WunderSyncService.this);
+				
+				Log.d(App.TAG, "Writing wunder tasks to db");
+				dbHelper.WriteWunderTasks(tasks);
+				
+				Log.d(App.TAG, "renaminmg tables");
+				dbHelper.RenameTables();
+				
+				
+				List<Task> gTasks = taskService.tasks().list("@default").setFields("items/title").execute().getItems();
+				
+				dbHelper.writeGoogleTasks(gTasks);
+				
 				
 			}
-			catch (AuthException e)
+			catch (Exception e)
 			{
-				Log.v(App.TAG, "AuthException");
+				Log.v(App.TAG, "Exception");
 				return new TaskSyncState(e.getMessage());
 
 			}

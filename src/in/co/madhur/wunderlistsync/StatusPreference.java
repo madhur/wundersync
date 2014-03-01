@@ -65,6 +65,7 @@ public class StatusPreference extends Preference implements
 				setStatus(R.string.state_error, syncState.getErrorMessage());
 				setButtonLabel(R.string.sync);
 				syncBar.setIndeterminate(false);
+				statusLabel.setText(mainActivity.getString(R.string.error));
 				break;
 				
 			case FETCH_GOOGLE_TASKS:
@@ -80,7 +81,6 @@ public class StatusPreference extends Preference implements
 				break;
 				
 			case FINISHED:
-				syncBar.setProgress(syncBar.getMax());
 				setStatus(R.string.state_finished);
 				syncBar.setIndeterminate(false);
 				setButtonLabel(R.string.sync);

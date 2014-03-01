@@ -1,5 +1,7 @@
 package in.co.madhur.wunderlistsync.api;
 
+import android.text.TextUtils;
+
 import com.google.gson.annotations.Expose;
 
 public class WunderTask
@@ -64,6 +66,9 @@ public class WunderTask
 
 	public String getCompleted_at()
 	{
+		if(TextUtils.isEmpty(completed_at))
+			return "";
+		
 		return completed_at;
 	}
 
