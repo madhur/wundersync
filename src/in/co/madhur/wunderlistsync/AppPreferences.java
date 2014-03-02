@@ -19,7 +19,7 @@ public class AppPreferences
 	
 	public enum Keys
 	{
-		CONNECTED("connected"),
+		GOOGLE_CONNECTED("connected"),
 		ENABLE_AUTO_SYNC("enable_auto_sync"),
 		AUTO_SYNC_SCHEDULE("auto_backup_schedule"),
 		ENABLE_WIFI_ONLY("wifi_only"),
@@ -92,6 +92,13 @@ public class AppPreferences
 	{
 		return sharedPreferences.getString(Keys.WUNDER_USERNAME.key, defValue);
 	}
+	
+	public boolean isGoogleConnected()
+	{
+		return sharedPreferences.getBoolean(Keys.GOOGLE_CONNECTED.key, false);
+		
+	}
+	
 	
 	public String GetWunderPassword()
 	{

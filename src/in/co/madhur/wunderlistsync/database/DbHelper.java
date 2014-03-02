@@ -129,6 +129,33 @@ public class DbHelper
 			database.close();
 		}
 	}
+	
+	public void TruncateListsOld() throws Exception
+	{
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		try
+		{
+
+			String sql1 = String.format("delete from %s", AllWLists.OLD_TABLE_NAME);
+
+			database.beginTransaction();
+			database.execSQL(sql1);
+			database.setTransactionSuccessful();
+			// database.endTransaction();
+		}
+		catch (Exception e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.endTransaction();
+			database.close();
+		}
+
+	}
 
 	public void TruncateTables() throws Exception
 	{
@@ -178,26 +205,28 @@ public class DbHelper
 
 		List<WList> wList = new ArrayList<WList>();
 		WList listObj;
-		c.moveToFirst();
-		do
+		if (c.moveToFirst())
 		{
-			listObj = new WList();
-			listObj.setId(c.getString(c.getColumnIndexOrThrow(AllWLists._ID)));
-			listObj.setTitle(c.getString(c.getColumnIndexOrThrow(AllWLists.TITLE)));
-			listObj.setOwner_id(c.getString(c.getColumnIndexOrThrow(AllWLists.OWNER_ID)));
-			listObj.setUpdated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.UPDATED_AT)));
-			listObj.setCreated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.CREATED_AT)));
+			do
+			{
+				listObj = new WList();
+				listObj.setId(c.getString(c.getColumnIndexOrThrow(AllWLists._ID)));
+				listObj.setTitle(c.getString(c.getColumnIndexOrThrow(AllWLists.TITLE)));
+				listObj.setOwner_id(c.getString(c.getColumnIndexOrThrow(AllWLists.OWNER_ID)));
+				listObj.setUpdated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.UPDATED_AT)));
+				listObj.setCreated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.CREATED_AT)));
 
-			wList.add(listObj);
+				wList.add(listObj);
 
+			}
+			while (c.moveToNext());
 		}
-		while (c.moveToNext());
 
 		return wList;
 
 	}
-
-	public void WriteLists(List<WList> lists) throws Exception
+	
+	public void WriteLists(List<WList> lists, String tableName) throws Exception
 	{
 
 		SQLiteDatabase database = db.getWritableDatabase();
@@ -205,7 +234,7 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT INTO " + AllWLists.TABLE_NAME
+			String sql = "INSERT INTO " + tableName
 					+ " VALUES (?,?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
@@ -242,6 +271,21 @@ public class DbHelper
 			database.endTransaction();
 			database.close();
 		}
+
+		
+	}
+	
+	public void WriteListsOld(List<WList> lists) throws Exception
+	{
+		
+		WriteLists(lists, AllWLists.OLD_TABLE_NAME);
+
+	}
+
+	public void WriteLists(List<WList> lists) throws Exception
+	{
+		
+		WriteLists(lists, AllWLists.TABLE_NAME);
 
 	}
 

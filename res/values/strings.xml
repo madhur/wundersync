@@ -4,8 +4,8 @@
     <string name="app_name">Wunder Sync</string>
     <string name="action_settings">Settings</string>
     <string name="ui_sync_button_label_idle">Sync</string>
-    <string name="ui_connected_label">Connect</string>
-    <string name="ui_connected_desc">Your account needs to be connected.</string>
+    <string name="ui_connected_label">Connect to Google Tasks</string>
+    <string name="ui_connected_desc">Your account needs to be connected to Google Tasks</string>
     <string name="ui_enable_auto_sync_label">Auto Sync</string>
     <string name="ui_enable_auto_sync_desc">Whether to automatically sync or not.</string>
     <string name="ui_auto_backup_schedule_label">Regular schedule</string>
@@ -34,8 +34,9 @@
     <string name="connected_string" formatted="false">Connected as: %s</string>
     <string name="not_connected">Tap to connect your Gmail Account</string>
     <string name="additional_autosync_settings">Configure Additional Sync Settings</string>
-    <string name="preferences_credentials">WunderList Credentials</string>
-    <string name="preferences_credentials_desc">Configure credentials for WunderList</string>
+    <string name="preferences_credentials">Connect to WunderList</string>
+    <string name="preferences_credentials_desc">Since WunderList does not support OAuth yet, you need to provide credentials</string>
+    <string name="wunderlist_cred_dialog">WunderList Credentials</string>
     <string name="wunderlist_username">Wunderlist UserName</string>
     <string name="wunderlist_password">Wunderlist Password</string>
 	<string name="username">username</string>
@@ -52,7 +53,10 @@
 	<string name="idle">Idle</string>
 	<string name="error_empty_cred">You must provide both username/password to continue</string>
 	<string name="missing_wunderlist_cred">You must set Wunderlist credentials to sync</string>
+	<string name="missing_google_cred">You must connect your Google Account to sync</string>
 	
-	<string name="select_sync_list">Select list to sync</string>
-	<string name="select_sync_list_desc">Select list to sync</string>
+	<string name="select_sync_list">Select lists to sync</string>
+	<string name="select_sync_list_desc">Select lists to sync</string>
+	<string name="error_refresh_internet">You must be connected to internet to refresh</string>
+	<string name="start_sync_dialog">The app is now ready to sync. Do you want to sync now?</string>
 </resources>

@@ -90,7 +90,7 @@ public class WunderListDialog extends AlertDialog
 		listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
 		preferences = new AppPreferences(context);
-		final SyncConfig config = new SyncConfig(true, true, null);
+		final TaskSyncConfig config = new TaskSyncConfig(true, true, null);
 
 		config.setUsername(preferences.GetWunderUserName());
 		config.setPassword(preferences.GetWunderPassword());

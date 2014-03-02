@@ -30,7 +30,7 @@ public class StatusPreference extends Preference implements
 		super(context);
 		this.mainActivity = context;
 		this.setSelectable(false);
-		this.setOrder(0);
+		this.setOrder(1);
 		
 	}
 	
@@ -97,7 +97,12 @@ public class StatusPreference extends Preference implements
 				setStatus(R.string.state_syncing);
 				setButtonLabel(R.string.stop_sync);
 				break;
-			
+				
+			case USER_RECOVERABLE_ERROR:
+				mainActivity.startActivityForResult(syncState.getAuthIntent(), Consts.REQUEST_AUTHORIZATION);
+				setStatus(R.string.state_finished);
+				syncBar.setIndeterminate(false);
+				setButtonLabel(R.string.sync);
 		}
 		
 		

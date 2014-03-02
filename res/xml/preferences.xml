@@ -7,6 +7,14 @@
         android:persistent="true"
         android:summary="@string/ui_connected_desc"
         android:title="@string/ui_connected_label" />
+    
+     <Preference
+        android:key="wunder_credentials"
+        android:title="@string/preferences_credentials" android:summary="@string/preferences_credentials_desc">
+        
+        
+   </Preference>
+   
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="enable_auto_sync"
@@ -37,12 +45,7 @@
     </PreferenceScreen>
 
     
-    <Preference
-        android:key="wunder_credentials"
-        android:title="@string/preferences_credentials" android:summary="@string/preferences_credentials_desc">
-        
-        
-   </Preference>
+   
 
 
 

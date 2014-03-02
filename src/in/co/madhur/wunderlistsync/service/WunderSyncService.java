@@ -6,6 +6,8 @@ import java.util.List;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException;
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.TasksScopes;
@@ -13,10 +15,12 @@ import com.google.api.services.tasks.model.Task;
 
 import in.co.madhur.wunderlistsync.App;
 import in.co.madhur.wunderlistsync.AppPreferences;
-import in.co.madhur.wunderlistsync.SyncConfig;
+import in.co.madhur.wunderlistsync.Consts;
+import in.co.madhur.wunderlistsync.TaskSyncConfig;
 import in.co.madhur.wunderlistsync.TaskSyncState;
 import in.co.madhur.wunderlistsync.WunderSyncState;
 import in.co.madhur.wunderlistsync.AppPreferences.Keys;
+import in.co.madhur.wunderlistsync.api.APIConsts;
 import in.co.madhur.wunderlistsync.api.AuthError;
 import in.co.madhur.wunderlistsync.api.AuthException;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
@@ -59,7 +63,7 @@ public class WunderSyncService extends Service
 	private void SyncWunder()
 	{
 		preferences = new AppPreferences(this);
-		SyncConfig config = new SyncConfig(true, true, null);
+		TaskSyncConfig config = new TaskSyncConfig(true, true, null);
 
 		config.setUsername(preferences.GetWunderUserName());
 		config.setPassword(preferences.GetWunderPassword());
@@ -72,15 +76,15 @@ public class WunderSyncService extends Service
 	}
 
 	private class WunderSyncTask extends
-			AsyncTask<SyncConfig, TaskSyncState, TaskSyncState>
+			AsyncTask<TaskSyncConfig, TaskSyncState, TaskSyncState>
 	{
 		com.google.api.services.tasks.Tasks taskService;
 		final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
 		final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
 		private GoogleAccountCredential credential;
-		SyncConfig config;
+		TaskSyncConfig config;
 
-		public WunderSyncTask(SyncConfig config)
+		public WunderSyncTask(TaskSyncConfig config)
 		{
 			this.config = config;
 		}
@@ -106,9 +110,9 @@ public class WunderSyncService extends Service
 		}
 
 		@Override
-		protected TaskSyncState doInBackground(SyncConfig... params)
+		protected TaskSyncState doInBackground(TaskSyncConfig... params)
 		{
-			SyncConfig config = params[0];
+			TaskSyncConfig config = params[0];
 			LoginResponse loginResponse;
 			WunderList wunderList = null;
 			DbHelper dbHelper = null;
@@ -134,9 +138,20 @@ public class WunderSyncService extends Service
 							Log.v(App.TAG, "New token: "
 									+ wunderList.GetToken());
 						}
+						else if(e.getErrorCode()== AuthError.USER_NOT_FOUND)
+						{
+							throw new AuthException(APIConsts.USER_NOT_FOUND);
+						}
 
 					}
 				}
+				else
+				{
+					wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+					preferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
+					
+				}
+			
 
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_WUNDERLIST_TASKS));
 				
@@ -178,6 +193,18 @@ public class WunderSyncService extends Service
 				dbHelper.TruncateTables();
 
 			}
+			catch(UserRecoverableAuthIOException e)
+			{
+				Log.e(App.TAG, "UserRecoverableAuthIOException");
+				return new TaskSyncState(WunderSyncState.USER_RECOVERABLE_ERROR, e.getIntent());
+				
+			}
+			catch(GoogleAuthIOException e)
+			{
+				
+				Log.e(App.TAG, "GoogleAuthIOException");
+				return new TaskSyncState("GoogleAuthIOException");
+			}
 			catch (Exception e)
 			{
 				// Log.e(App.TAG, e.getClass().getName());
@@ -187,6 +214,9 @@ public class WunderSyncService extends Service
 					Log.e(App.TAG, e.getMessage());
 					return new TaskSyncState(e.getMessage());
 				}
+				
+				return new TaskSyncState("An error occured, please check logs");
+				
 
 			}
 			finally

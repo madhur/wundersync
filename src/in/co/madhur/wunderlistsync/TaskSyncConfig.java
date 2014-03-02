@@ -2,7 +2,7 @@ package in.co.madhur.wunderlistsync;
 
 import java.util.Date;
 
-public class SyncConfig
+public class TaskSyncConfig
 {
 
 	private boolean isOneWay;
@@ -13,7 +13,7 @@ public class SyncConfig
 	private String token;
 	private String googleAccount;
 	
-	public SyncConfig(boolean isOneWay, boolean isManual, Date lastSyncDate)
+	public TaskSyncConfig(boolean isOneWay, boolean isManual, Date lastSyncDate)
 	{
 		this.isOneWay=isOneWay;
 		this.isManual=isManual;

@@ -48,10 +48,13 @@ import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends PreferenceActivity
@@ -83,8 +86,6 @@ public class MainActivity extends PreferenceActivity
 		getPreferenceScreen().addPreference(statusPrefence);
 		// listView = (ListView) findViewById(R.id.list);
 		// Google Accounts
-		
-		
 
 	}
 
@@ -99,8 +100,8 @@ public class MainActivity extends PreferenceActivity
 		// }
 		App.getEventBus().register(statusPrefence);
 		SetListeners();
-	} 
-	
+	}
+
 	@Override
 	protected void onPause()
 	{
@@ -108,7 +109,7 @@ public class MainActivity extends PreferenceActivity
 		super.onPause();
 		App.getEventBus().unregister(statusPrefence);
 	}
-	
+
 	@Override
 	protected void onDestroy()
 	{
@@ -121,14 +122,20 @@ public class MainActivity extends PreferenceActivity
 
 	public void StartSync()
 	{
-		
-		if(appPreferences.isEmptyCred())
+
+		if (appPreferences.isEmptyCred())
 		{
 			showDialog(Dialogs.MISSING_CREDENTIALS.ordinal());
 			return;
 		}
 		
-		
+		if(appPreferences.GetUserName().equalsIgnoreCase(""))
+		{
+			
+			showDialog(Dialogs.MISSING_GOOGLE_CONNECT.ordinal());
+			return;
+		}
+
 		Intent syncIntent = new Intent();
 		syncIntent.setClass(this, WunderSyncService.class);
 		this.startService(syncIntent);
@@ -142,10 +149,37 @@ public class MainActivity extends PreferenceActivity
 		switch (Dialogs.values()[id])
 		{
 			case MISSING_CREDENTIALS:
-				title=getString(R.string.app_name);
-				msg=getString(R.string.missing_wunderlist_cred);
+				title = getString(R.string.app_name);
+				msg = getString(R.string.missing_wunderlist_cred);
 				break;
 
+			case MISSING_GOOGLE_CONNECT:
+				title=getString(R.string.app_name);
+				msg=getString(R.string.missing_google_cred);
+				break;
+				
+			case START_SYNC:
+				title=getString(R.string.app_name);
+				msg=getString(R.string.start_sync_dialog);
+				return new AlertDialog.Builder(this).setTitle(title).setMessage(msg).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						MainActivity.this.StartSync();
+					}
+				}).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
+				{
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						dialog.cancel();
+						
+					}
+				}).create();
+				
+				
 			default:
 				return null;
 		}
@@ -166,7 +200,7 @@ public class MainActivity extends PreferenceActivity
 
 	private void SetListeners()
 	{
-		findPreference(Keys.CONNECTED.key).setOnPreferenceChangeListener(new OnPreferenceChangeListener()
+		findPreference(Keys.GOOGLE_CONNECTED.key).setOnPreferenceChangeListener(new OnPreferenceChangeListener()
 		{
 
 			@Override
@@ -226,165 +260,271 @@ public class MainActivity extends PreferenceActivity
 				return true;
 			}
 		});
-		
+
 		findPreference(Keys.SELECT_SYNC_LISTS.key).setOnPreferenceClickListener(new OnPreferenceClickListener()
 		{
-			
+
 			@Override
 			public boolean onPreferenceClick(Preference preference)
 			{
-				
+				if (appPreferences.isEmptyCred())
+				{
+
+					showDialog(Dialogs.MISSING_CREDENTIALS.ordinal());
+					return true;
+				}
+
 				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 				LayoutInflater inflater = (LayoutInflater) getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-				// Inflate and set the layout for the dialog
-				// Pass null as the parent view because its going in the dialog
-				// layout
 				final View loginView = inflater.inflate(R.layout.select_lists, null);
 
-				builder.setTitle(R.string.preferences_credentials_desc).setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
+				builder.setTitle(R.string.select_sync_list).setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
 				{
 					public void onClick(DialogInterface dialog, int id)
 					{
 						// User cancelled the dialog
 					}
-				}).setView(loginView);
+				}).setView(loginView).setNeutralButton(R.string.refresh, null);
 
 				AlertDialog dialog = builder.create();
 
 				dialog.setOnShowListener(new OnShowListener()
 				{
 					ListView listView;
+					ProgressBar progressBar;
+					TextView statusMessage;
 
 					@Override
 					public void onShow(final DialogInterface dialog)
 					{
+						Log.v(App.TAG, "onShow");
+
 						Button b = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
-						
+						// Button cancelButton = ((AlertDialog)
+						// dialog).getButton(AlertDialog.BUTTON_NEGATIVE);
+						Button refreshButton = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_NEUTRAL);
+
 						listView = (ListView) loginView.findViewById(R.id.wunder_listview);
 						listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
+						progressBar = (ProgressBar) loginView.findViewById(R.id.pbHeaderProgress);
+						statusMessage = (TextView) loginView.findViewById(R.id.statusMessage);
 
-						AppPreferences preferences = new AppPreferences(MainActivity.this);
-						final SyncConfig config = new SyncConfig(true, true, null);
-						
+						final AppPreferences preferences = new AppPreferences(MainActivity.this);
+						final ListSyncConfig config = new ListSyncConfig(true, true, null, false);
+
 						config.setUsername(preferences.GetWunderUserName());
 						config.setPassword(preferences.GetWunderPassword());
 						config.setToken(preferences.GetMetadata(Keys.TOKEN));
-						config.setGoogleAccount(preferences.GetUserName());
 
-						
+						Log.e(App.TAG, "Firing get list task");
 						new WunderListsSyncTask(config).execute(config);
-						
+
 						b.setOnClickListener(new View.OnClickListener()
 						{
 
 							@Override
 							public void onClick(View view)
 							{
-								
 
-							
+								// Save into old_lists table into database along
+								// with selected values
+								HashMapAdapter adapter = (HashMapAdapter) listView.getAdapter();
+								long[] checkIds = listView.getCheckedItemIds();
+
 								dialog.dismiss();
 							}
 						});
 
-					}
-					
-					
-					class WunderListsSyncTask extends
-					AsyncTask<SyncConfig, Void, HashMap<String, String>>
-			{
-				SyncConfig config;
-				
-
-				public WunderListsSyncTask(SyncConfig config)
-				{
-					this.config = config;
-				}
-
-				@Override
-				protected void onPreExecute()
-				{
-					super.onPreExecute();
-				}
-
-				@Override
-				protected HashMap<String, String> doInBackground(SyncConfig... params)
-				{
-					SyncConfig config = params[0];
-					LoginResponse loginResponse;
-					WunderList wunderList = null;
-					DbHelper dbHelper = null;
-					HashMap<String, String> listMap = null;
-					
-					try
-					{
-
-						if (!TextUtils.isEmpty(params[0].getToken()))
+						refreshButton.setOnClickListener(new OnClickListener()
 						{
 
-							try
+							@Override
+							public void onClick(View v)
 							{
-								wunderList = WunderList.getInstance(params[0].getToken());
-							}
-							catch (AuthException e)
-							{
-								Log.v(App.TAG, "Old token expired, getting new token...");
-								if (e.getErrorCode() == AuthError.OLD_TOKEN_EXPIRED)
+								if (!Connection.isNetworkGood(MainActivity.this))
 								{
-									wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
-									Log.v(App.TAG, "New token: "
-											+ wunderList.GetToken());
+									Toast.makeText(MainActivity.this, getString(R.string.error_refresh_internet), Toast.LENGTH_LONG).show();
+									return;
 								}
 
+								final ListSyncConfig config = new ListSyncConfig(true, true, null, true);
+
+								config.setUsername(preferences.GetWunderUserName());
+								config.setPassword(preferences.GetWunderPassword());
+								config.setToken(preferences.GetMetadata(Keys.TOKEN));
+
+								Log.e(App.TAG, "Firing get list task");
+								new WunderListsSyncTask(config).execute(config);
+
 							}
-						}
-
-						List<WList> lists = wunderList.GetLists();
-						listMap=new HashMap<String, String>();
-						
-						for (int i = 0; i < lists.size(); ++i)
-						{
-
-							listMap.put(lists.get(i).getId(), lists.get(i).getTitle());
-						}
-
-						return listMap;
+						});
 
 					}
-					catch (Exception e)
+
+					class WunderListsSyncTask extends
+							AsyncTask<ListSyncConfig, Void, WListResult>
 					{
+						ListSyncConfig config;
 
-						if (e.getMessage() != null)
+						public WunderListsSyncTask(ListSyncConfig config)
 						{
-							Log.e(App.TAG, e.getMessage());
+							this.config = config;
+						}
+
+						@Override
+						protected void onPreExecute()
+						{
+							super.onPreExecute();
+							progressBar.setVisibility(ProgressBar.VISIBLE);
+							statusMessage.setVisibility(TextView.GONE);
+						}
+
+						@Override
+						protected WListResult doInBackground(ListSyncConfig... params)
+						{
+							ListSyncConfig config = params[0];
+							WunderList wunderList = null;
+							DbHelper dbHelper = null;
+							try
+							{
+								List<WList> lists;
+								dbHelper = DbHelper.getInstance(MainActivity.this);
+
+								if (config.isForceRefresh())
+								{
+									Log.d(App.TAG, "Its a force refresh");
+
+									if (!TextUtils.isEmpty(params[0].getToken()))
+									{
+
+										try
+										{
+											wunderList = WunderList.getInstance(params[0].getToken());
+										}
+										catch (AuthException e)
+										{
+											Log.v(App.TAG, "Old token expired, getting new token...");
+											if (e.getErrorCode() == AuthError.OLD_TOKEN_EXPIRED)
+											{
+												wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+												Log.v(App.TAG, "New token: "
+														+ wunderList.GetToken());
+											}
+
+										}
+									}
+									else
+									{
+										wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+										appPreferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
+
+									}
+
+									// Get list from REST API
+									lists = wunderList.GetLists();
+
+									// purge the previous data
+									dbHelper.TruncateListsOld();
+
+									// Write lists into the database
+									dbHelper.WriteListsOld(lists);
+
+								}
+								else
+								{
+
+									lists = dbHelper.ReadLists();
+
+									if (lists.size() == 0)
+									{
+										Log.d(App.TAG, "Empty list from db, getting from wunderlist");
+
+										if (!TextUtils.isEmpty(params[0].getToken()))
+										{
+
+											try
+											{
+												wunderList = WunderList.getInstance(params[0].getToken());
+											}
+											catch (AuthException e)
+											{
+												Log.v(App.TAG, "Old token expired, getting new token...");
+												if (e.getErrorCode() == AuthError.OLD_TOKEN_EXPIRED)
+												{
+													wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+													Log.v(App.TAG, "New token: "
+															+ wunderList.GetToken());
+												}
+
+											}
+										}
+										else
+										{
+											wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+											appPreferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
+
+										}
+
+										// Get list from REST API
+										lists = wunderList.GetLists();
+
+										// purge the previous data
+										dbHelper.TruncateListsOld();
+
+										// Write lists into the database
+										dbHelper.WriteListsOld(lists);
+									}
+								}
+
+								return new WListResult(lists);
+
+							}
+							catch (Exception e)
+							{
+
+								if (e.getMessage() != null)
+								{
+									Log.e(App.TAG, e.getMessage());
+									return new WListResult(e.getMessage());
+								}
+
+								return new WListResult(e.getMessage());
+
+							}
+
+						}
+
+						@Override
+						protected void onPostExecute(WListResult result)
+						{
+							super.onPostExecute(result);
+							if (result != null && result.isError() == false)
+							{
+								HashMapAdapter adapter = new HashMapAdapter(result.getLists());
+								listView.setAdapter(adapter);
+								listView.setVisibility(ListView.VISIBLE);
+							}
+							else
+							{
+								statusMessage.setText(result.getErrorMessage());
+								statusMessage.setVisibility(TextView.VISIBLE);
+								listView.setVisibility(ListView.GONE);
+							}
+
+							progressBar.setVisibility(ProgressBar.GONE);
+
 						}
 
 					}
 
-					return null;
-
-				}
-
-				@Override
-				protected void onPostExecute(HashMap<String, String> result)
-				{
-					super.onPostExecute(result);
-					if (result != null)
-					{
-						HashMapAdapter adapter = new HashMapAdapter(result);
-						listView.setAdapter(adapter);
-					}
-
-				}
-
-			}
-					
 				});
+
 				dialog.show();
 
 				return true;
+
 			}
 		});
 
@@ -402,7 +542,7 @@ public class MainActivity extends PreferenceActivity
 				// layout
 				final View loginView = inflater.inflate(R.layout.login, null);
 
-				builder.setMessage(R.string.preferences_credentials_desc).setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
+				builder.setMessage(R.string.wunderlist_cred_dialog).setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
 				{
 					public void onClick(DialogInterface dialog, int id)
 					{
@@ -422,16 +562,15 @@ public class MainActivity extends PreferenceActivity
 					{
 						Button b = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
 						userName.setText(appPreferences.GetWunderUserName());
-						
+
 						password.setText(appPreferences.GetWunderPassword());
-						
+
 						b.setOnClickListener(new View.OnClickListener()
 						{
 
 							@Override
 							public void onClick(View view)
 							{
-								
 
 								if (userName.getText().length() == 0
 										|| password.getText().length() == 0)
@@ -484,8 +623,10 @@ public class MainActivity extends PreferenceActivity
 			case Consts.REQUEST_GOOGLE_PLAY_SERVICES:
 				if (resultCode == Activity.RESULT_OK)
 				{
-					// haveGooglePlayServices();
-					findPreference(Keys.CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+					findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+					
+					haveGooglePlayServices();
+					
 				}
 				else
 				{
@@ -495,9 +636,11 @@ public class MainActivity extends PreferenceActivity
 			case Consts.REQUEST_AUTHORIZATION:
 				if (resultCode == Activity.RESULT_OK)
 				{
-					// AsyncLoadTasks.run(this);
+					
 
-					findPreference(Keys.CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+					findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+					
+					showSyncDialog();
 
 				}
 				else
@@ -514,7 +657,7 @@ public class MainActivity extends PreferenceActivity
 					{
 						credential.setSelectedAccountName(accountName);
 						appPreferences.SetUserName(accountName);
-						findPreference(Keys.CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+						findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
 						// AsyncLoadTasks.run(this);
 					}
 				}
@@ -532,8 +675,8 @@ public class MainActivity extends PreferenceActivity
 		}
 		else
 		{
-			// load calendars
-			AsyncLoadTasks.run(this);
+			showSyncDialog();
+			
 		}
 	}
 
@@ -548,13 +691,20 @@ public class MainActivity extends PreferenceActivity
 			}
 		});
 	}
+	
+	private void showSyncDialog()
+	{
+		if(!appPreferences.isEmptyCred() && appPreferences.isGoogleConnected())
+			showDialog(Dialogs.START_SYNC.ordinal());
+		
+	}
 
 	private boolean checkGooglePlayServicesAvailable()
 	{
 		final int connectionStatusCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
 		if (GooglePlayServicesUtil.isUserRecoverableError(connectionStatusCode))
 		{
-			// showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
+			 showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
 			return false;
 		}
 		return true;
@@ -562,6 +712,7 @@ public class MainActivity extends PreferenceActivity
 
 	private void chooseAccount()
 	{
+		credential = GoogleAccountCredential.usingOAuth2(getBaseContext(), Collections.singleton(TasksScopes.TASKS));
 		startActivityForResult(credential.newChooseAccountIntent(), Consts.REQUEST_ACCOUNT_PICKER);
 	}
 

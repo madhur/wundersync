@@ -1,11 +1,14 @@
 package in.co.madhur.wunderlistsync;
 
+import android.content.Intent;
+
 public class TaskSyncState
 {
 	private WunderSyncState state;
 	private int itemsToSync;
 	private int syncedItems;
 	private String errorMessage;
+	private Intent authIntent;
 	
 	public TaskSyncState(WunderSyncState state)
 	{
@@ -17,6 +20,12 @@ public class TaskSyncState
 		this.state=WunderSyncState.ERROR;
 		this.errorMessage=errorMessage;
 		
+	}
+
+	public TaskSyncState(WunderSyncState userRecoverableError, Intent intent)
+	{
+		this.setState(userRecoverableError);
+		this.authIntent=intent;
 	}
 
 	public int getItemsToSync()
@@ -57,6 +66,16 @@ public class TaskSyncState
 	public void setErrorMessage(String errorMessage)
 	{
 		this.errorMessage = errorMessage;
+	}
+
+	public Intent getAuthIntent()
+	{
+		return authIntent;
+	}
+
+	public void setAuthIntent(Intent authIntent)
+	{
+		this.authIntent = authIntent;
 	}
 
 }

@@ -17,139 +17,160 @@ public class WunderList
 	private static WunderList wunderList;
 	private static RestAdapter restAdapter;
 	private static WunderAPI service;
-	private static String authorizationHeader;
-	//private static String username, password;
 	private static String token;
-	
+
 	private WunderList()
 	{
 
 	}
 
 	// The caller should save the token in preference
-	private static  LoginResponse Login(String userName, String password) throws AuthException
+	private static LoginResponse Login(String userName, String password)
+			throws AuthException, NetworkException
 	{
 		Log.v(App.TAG, "Executing login");
-		LoginResponse response = null; 
+		LoginResponse response = null;
 		try
 		{
 			response = service.login(userName, password);
 		}
 		catch (RetrofitError e)
 		{
-			if(e.getResponse().getStatus()==403)
-				throw new AuthException(Consts.AUTH_ERROR);
-			if(e.getResponse().getStatus()==404)
-				throw new AuthException(Consts.USER_NOT_FOUND);
-			
-			Log.v(App.TAG, response.toString());
+			if(e.isNetworkError())
+				throw new NetworkException(APIConsts.NETWORK_ERROR);
+			if (e.getResponse().getStatus() == 403)
+				throw new AuthException(APIConsts.AUTH_ERROR);
+			if (e.getResponse().getStatus() == 404)
+				throw new AuthException(APIConsts.USER_NOT_FOUND);
+
 		}
-		
-		// Save the token 
-		token=response.getToken();
-		
+
+		// Save the token
+		token = response.getToken();
+
 		return response;
 	}
 
 	public void SetToken(String newToken)
 	{
-		token=newToken;
-		
+		token = newToken;
+
 	}
-	
+
 	public String GetToken()
 	{
 		return token;
 	}
 
-	private static boolean IsLoginRequired() throws AuthException
+	private static boolean IsLoginRequired() throws AuthException, NetworkException
 	{
 		Me userInfo;
-		
+
 		try
 		{
 			// Try to get data using provided token
-			userInfo=service.getUserInfo(token);
+			userInfo = service.getUserInfo(token);
 		}
-		catch(RetrofitError e)
+		catch (RetrofitError e)
 		{
-			if(e.getResponse().getStatus()==401)
+			if(e.isNetworkError())
+				throw new NetworkException(APIConsts.NETWORK_ERROR);
+			
+			if (e.getResponse().getStatus() == 401)
 			{
 				return true;
 			}
-			Log.e(App.TAG, "IsLoginRequired: Status: " + e.getResponse().getStatus());
 			return true;
 		}
-		
+
 		return false;
 	}
-	
-	public List<WTask> GetTasks()
+
+	public List<WTask> GetTasks() throws AuthException, NetworkException
 	{
 		List<WTask> tasks;
-		
-		tasks=service.GetWunderTasks(token);
-		
+		try
+		{
+			tasks = service.GetWunderTasks(token);
+		}
+
+		catch (RetrofitError e)
+		{
+			if(e.isNetworkError())
+				throw new NetworkException(APIConsts.NETWORK_ERROR);
+			
+			if (e.getResponse().getStatus() == 401)
+			{
+				throw new AuthException(APIConsts.AUTH_ERROR, AuthError.AUTH_ERROR);
+			}
+			else
+				throw new AuthException(APIConsts.UNKNWOWN_RETROFIT_ERROR, AuthError.UNKNOWN);
+		}
+
 		return tasks;
 	}
-	
-	public List<WList> GetLists()
+
+	public List<WList> GetLists() throws AuthException, NetworkException
 	{
 		List<WList> lists;
-		
-		lists=service.GetLists(token);
-		
+		try
+		{
+			lists = service.GetLists(token);
+		}
+		catch (RetrofitError e)
+		{
+			if(e.isNetworkError())
+				throw new NetworkException(APIConsts.NETWORK_ERROR);
+			
+			if (e.getResponse().getStatus() == 401)
+			{
+				throw new AuthException(APIConsts.AUTH_ERROR, AuthError.AUTH_ERROR);
+			}
+			else
+				throw new AuthException(APIConsts.UNKNWOWN_RETROFIT_ERROR, AuthError.UNKNOWN);
+		}
+
 		return lists;
-		
-		
+
 	}
 
-	public static WunderList getInstance(String newToken) throws AuthException
+	public static WunderList getInstance(String newToken) throws AuthException, NetworkException
 	{
 		if (wunderList == null)
 		{
 			restAdapter = new RestAdapter.Builder().setEndpoint(APIConsts.API_URL).build();
 			service = restAdapter.create(WunderAPI.class);
 			wunderList = new WunderList();
-			token=newToken;
-			
-			if(IsLoginRequired())
+			token = newToken;
+
+			if (IsLoginRequired())
 				throw new AuthException(AuthError.OLD_TOKEN_EXPIRED);
-			
+
 			return wunderList;
 		}
 		else
 			return wunderList;
 
 	}
-	
-	public static WunderList getInstance(String userName, String password) throws AuthException
+
+	public static WunderList getInstance(String userName, String password)
+			throws AuthException, NetworkException
 	{
 		if (wunderList == null)
 		{
 			restAdapter = new RestAdapter.Builder().setEndpoint(APIConsts.API_URL).build();
 			service = restAdapter.create(WunderAPI.class);
 			wunderList = new WunderList();
-			
-			// Since token is not provided, make explicit call to login which will set the token internally.
+
+			// Since token is not provided, make explicit call to login which
+			// will set the token internally.
 			// Callers should get the token by calling wunderlist.getToken();
 			Login(userName, password);
-			
+
 			return wunderList;
 		}
 		else
 			return wunderList;
 
 	}
-
-	public String getAuthorizationHeader()
-	{
-		return authorizationHeader;
-	}
-
-	public void setAuthorizationHeader(String authorizationHeader)
-	{
-		this.authorizationHeader = authorizationHeader;
-	}
-
 }

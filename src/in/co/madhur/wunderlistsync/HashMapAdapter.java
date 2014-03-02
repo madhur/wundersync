@@ -4,19 +4,22 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.CheckedTextView;
 import android.widget.TextView;
 
+import in.co.madhur.wunderlistsync.api.model.WList;
+
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class HashMapAdapter extends BaseAdapter
 {
-	private final ArrayList mData;
+	private final ArrayList<WList> mData;
 
-	public HashMapAdapter(Map<String, String> map)
+	public HashMapAdapter(List<WList> list)
 	{
-		mData = new ArrayList();
-		mData.addAll(map.entrySet());
+		mData = (ArrayList<WList>) list;
 	}
 
 	@Override
@@ -26,15 +29,14 @@ public class HashMapAdapter extends BaseAdapter
 	}
 
 	@Override
-	public Map.Entry<String, String> getItem(int position)
+	public WList getItem(int position)
 	{
-		return (Map.Entry) mData.get(position);
+		return mData.get(position);
 	}
 
 	@Override
 	public long getItemId(int position)
 	{
-		// TODO implement you own logic with ID
 		return position;
 	}
 
@@ -52,10 +54,11 @@ public class HashMapAdapter extends BaseAdapter
 			result = convertView;
 		}
 
-		Map.Entry<String, String> item = getItem(position);
+		WList item = getItem(position);
 
-		// TODO replace findViewById by ViewHolder
-		((TextView) result.findViewById(android.R.id.text1)).setText(item.getValue());
+		CheckedTextView textView = (CheckedTextView) result.findViewById(android.R.id.text1);
+
+		textView.setText(item.getTitle());
 
 		return result;
 	}
