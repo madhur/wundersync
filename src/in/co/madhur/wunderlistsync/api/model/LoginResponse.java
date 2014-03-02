@@ -1,4 +1,5 @@
-package in.co.madhur.wunderlistsync.api;
+package in.co.madhur.wunderlistsync.api.model;
+
 
 import java.util.HashMap;
 import java.util.Map;

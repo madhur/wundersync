@@ -1,5 +1,6 @@
 package in.co.madhur.wunderlistsync.database;
 
+import in.co.madhur.wunderlistsync.database.WunderSyncContract.AllWLists;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.GoogleTasks;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderTasks;
 import android.content.Context;
@@ -44,6 +45,25 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.COMPLETED_BY_ID + " )";
+	
+	
+	private static final String SQL_CREATE_WUNDERLISTS = "CREATE TABLE " + "%s"
+			+ " ("
+			+ AllWLists._ID
+			+ " TEXT PRIMARY KEY,"
+			+ AllWLists.TITLE
+			+ TEXT_TYPE
+			+ COMMA_SEP
+			+ AllWLists.OWNER_ID
+			+ TEXT_TYPE
+			+ COMMA_SEP
+			+ AllWLists.CREATED_AT
+			+ TEXT_TYPE
+			+ COMMA_SEP
+			+ AllWLists.UPDATED_AT
+			+ TEXT_TYPE
+			+ COMMA_SEP
+			+ AllWLists.ISSYNCED + " )";
 
 	private static final String SQL_CREATE_GOOGLETASK = "CREATE TABLE " + "%s"
 			+ " ("
@@ -85,6 +105,9 @@ public class WunderSyncDB extends SQLiteOpenHelper
 		
 		db.execSQL(String.format(SQL_CREATE_GOOGLETASK, GoogleTasks.TABLE_NAME));
 		db.execSQL(String.format(SQL_CREATE_GOOGLETASK, GoogleTasks.OLD_TABLE_NAME));
+		
+		db.execSQL(String.format(SQL_CREATE_WUNDERLISTS, AllWLists.TABLE_NAME));
+		db.execSQL(String.format(SQL_CREATE_WUNDERLISTS, AllWLists.OLD_TABLE_NAME));
 		
 	}
 

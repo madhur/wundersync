@@ -14,7 +14,7 @@
     <string name="ui_wifi_only_desc">Only backup when connected to Wifi</string>
     <string name="ui_settings_advanced_label">Advanced settings</string>
     <string name="ui_settings_advanced_desc">Set advanced preferences.</string>
-    <string name="ui_auto_backup_settings_label">Auto Sync Settings</string>
+    <string name="ui_auto_backup_settings_label">Sync Settings</string>
     <string name="_1h">1 h</string>
     <string name="_2h">2 h</string>
     <string name="_6h">6 h</string>
@@ -33,7 +33,7 @@
     <string name="error_format">[Error] %s</string>
     <string name="connected_string" formatted="false">Connected as: %s</string>
     <string name="not_connected">Tap to connect your Gmail Account</string>
-    <string name="additional_autosync_settings">Configure Additional Auto Sync Settings</string>
+    <string name="additional_autosync_settings">Configure Additional Sync Settings</string>
     <string name="preferences_credentials">WunderList Credentials</string>
     <string name="preferences_credentials_desc">Configure credentials for WunderList</string>
     <string name="wunderlist_username">Wunderlist UserName</string>
@@ -52,4 +52,7 @@
 	<string name="idle">Idle</string>
 	<string name="error_empty_cred">You must provide both username/password to continue</string>
 	<string name="missing_wunderlist_cred">You must set Wunderlist credentials to sync</string>
+	
+	<string name="select_sync_list">Select list to sync</string>
+	<string name="select_sync_list_desc">Select list to sync</string>
 </resources>

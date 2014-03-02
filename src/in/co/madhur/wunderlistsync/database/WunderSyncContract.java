@@ -42,6 +42,19 @@ public final class WunderSyncContract
 		public static final String NOTES = "notes";
 
 	}
+	
+	public static abstract class AllWLists implements BaseColumns
+	{
+		public static final String TABLE_NAME = "wunderlists";
+		public static final String OLD_TABLE_NAME = "wunderlists_old";
+		
+		public static final String ID = "id";
+		public static final String TITLE = "title";
+		public static final String OWNER_ID = "owner_id";
+		public static final String CREATED_AT = "created_at";
+		public static final String UPDATED_AT = "updated_at";
+		public static final String ISSYNCED = "issynced";
+	}
 
 	public static abstract class WunderUser implements BaseColumns
 	{

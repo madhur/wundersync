@@ -1,10 +1,10 @@
-package in.co.madhur.wunderlistsync.api;
+package in.co.madhur.wunderlistsync.api.model;
 
 import android.text.TextUtils;
 
 import com.google.gson.annotations.Expose;
 
-public class WunderTask
+public class WTask
 {
 
 	@Expose

@@ -1,5 +1,10 @@
 package in.co.madhur.wunderlistsync.api;
 
+import in.co.madhur.wunderlistsync.api.model.LoginResponse;
+import in.co.madhur.wunderlistsync.api.model.Me;
+import in.co.madhur.wunderlistsync.api.model.WList;
+import in.co.madhur.wunderlistsync.api.model.WTask;
+
 import java.util.List;
 
 import retrofit.http.Field;
@@ -18,8 +23,11 @@ public interface WunderAPI
 	  Me getUserInfo(@Header("Authorization") String authorization);
 	
 	@GET(value = "/me/tasks")
-	List<WunderTask> GetWunderTasks(@Header("Authorization") String authorization);
+	List<WTask> GetWunderTasks(@Header("Authorization") String authorization);
 	
 	@POST(value = "/me/tasks")
-	List<WunderTask> CreateWunderTask(@Header("Authorization") String authorization, String listId, String title,  String isStarred, String dueDate);
+	List<WTask> CreateWunderTask(@Header("Authorization") String authorization, String listId, String title,  String isStarred, String dueDate);
+	
+	@GET(value = "/me/lists")
+	List<WList> GetLists(@Header("Authorization") String authorization);
 }

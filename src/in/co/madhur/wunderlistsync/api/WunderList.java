@@ -5,6 +5,10 @@ import java.util.List;
 import android.util.Log;
 import in.co.madhur.wunderlistsync.App;
 import in.co.madhur.wunderlistsync.Consts;
+import in.co.madhur.wunderlistsync.api.model.LoginResponse;
+import in.co.madhur.wunderlistsync.api.model.Me;
+import in.co.madhur.wunderlistsync.api.model.WList;
+import in.co.madhur.wunderlistsync.api.model.WTask;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 
@@ -80,13 +84,24 @@ public class WunderList
 		return false;
 	}
 	
-	public List<WunderTask> GetTasks()
+	public List<WTask> GetTasks()
 	{
-		List<WunderTask> tasks;
+		List<WTask> tasks;
 		
 		tasks=service.GetWunderTasks(token);
 		
 		return tasks;
+	}
+	
+	public List<WList> GetLists()
+	{
+		List<WList> lists;
+		
+		lists=service.GetLists(token);
+		
+		return lists;
+		
+		
 	}
 
 	public static WunderList getInstance(String newToken) throws AuthException

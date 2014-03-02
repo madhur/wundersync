@@ -2,6 +2,7 @@ package in.co.madhur.wunderlistsync;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -15,9 +16,15 @@ import com.google.api.services.tasks.TasksScopes;
 import com.squareup.otto.Subscribe;
 
 import in.co.madhur.wunderlistsync.AppPreferences.Keys;
-import in.co.madhur.wunderlistsync.WunderListCredDialog.DialogListener;
+import in.co.madhur.wunderlistsync.api.AuthError;
+import in.co.madhur.wunderlistsync.api.AuthException;
+import in.co.madhur.wunderlistsync.api.WunderList;
+import in.co.madhur.wunderlistsync.api.model.LoginResponse;
+import in.co.madhur.wunderlistsync.api.model.WList;
+import in.co.madhur.wunderlistsync.database.DbHelper;
 import in.co.madhur.wunderlistsync.gtasks.*;
 import in.co.madhur.wunderlistsync.service.WunderSyncService;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -37,6 +44,7 @@ import android.support.v4.app.DialogFragment;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -214,6 +222,167 @@ public class MainActivity extends PreferenceActivity
 					preference.setSummary(getString(R.string.not_connected));
 					appPreferences.SetMetadata(Keys.LAST_SYNC_DATE, "");
 				}
+
+				return true;
+			}
+		});
+		
+		findPreference(Keys.SELECT_SYNC_LISTS.key).setOnPreferenceClickListener(new OnPreferenceClickListener()
+		{
+			
+			@Override
+			public boolean onPreferenceClick(Preference preference)
+			{
+				
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				LayoutInflater inflater = (LayoutInflater) getBaseContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+				// Inflate and set the layout for the dialog
+				// Pass null as the parent view because its going in the dialog
+				// layout
+				final View loginView = inflater.inflate(R.layout.select_lists, null);
+
+				builder.setTitle(R.string.preferences_credentials_desc).setPositiveButton(android.R.string.ok, null).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, int id)
+					{
+						// User cancelled the dialog
+					}
+				}).setView(loginView);
+
+				AlertDialog dialog = builder.create();
+
+				dialog.setOnShowListener(new OnShowListener()
+				{
+					ListView listView;
+
+					@Override
+					public void onShow(final DialogInterface dialog)
+					{
+						Button b = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+						
+						listView = (ListView) loginView.findViewById(R.id.wunder_listview);
+						listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+
+						AppPreferences preferences = new AppPreferences(MainActivity.this);
+						final SyncConfig config = new SyncConfig(true, true, null);
+						
+						config.setUsername(preferences.GetWunderUserName());
+						config.setPassword(preferences.GetWunderPassword());
+						config.setToken(preferences.GetMetadata(Keys.TOKEN));
+						config.setGoogleAccount(preferences.GetUserName());
+
+						
+						new WunderListsSyncTask(config).execute(config);
+						
+						b.setOnClickListener(new View.OnClickListener()
+						{
+
+							@Override
+							public void onClick(View view)
+							{
+								
+
+							
+								dialog.dismiss();
+							}
+						});
+
+					}
+					
+					
+					class WunderListsSyncTask extends
+					AsyncTask<SyncConfig, Void, HashMap<String, String>>
+			{
+				SyncConfig config;
+				
+
+				public WunderListsSyncTask(SyncConfig config)
+				{
+					this.config = config;
+				}
+
+				@Override
+				protected void onPreExecute()
+				{
+					super.onPreExecute();
+				}
+
+				@Override
+				protected HashMap<String, String> doInBackground(SyncConfig... params)
+				{
+					SyncConfig config = params[0];
+					LoginResponse loginResponse;
+					WunderList wunderList = null;
+					DbHelper dbHelper = null;
+					HashMap<String, String> listMap = null;
+					
+					try
+					{
+
+						if (!TextUtils.isEmpty(params[0].getToken()))
+						{
+
+							try
+							{
+								wunderList = WunderList.getInstance(params[0].getToken());
+							}
+							catch (AuthException e)
+							{
+								Log.v(App.TAG, "Old token expired, getting new token...");
+								if (e.getErrorCode() == AuthError.OLD_TOKEN_EXPIRED)
+								{
+									wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
+									Log.v(App.TAG, "New token: "
+											+ wunderList.GetToken());
+								}
+
+							}
+						}
+
+						List<WList> lists = wunderList.GetLists();
+						listMap=new HashMap<String, String>();
+						
+						for (int i = 0; i < lists.size(); ++i)
+						{
+
+							listMap.put(lists.get(i).getId(), lists.get(i).getTitle());
+						}
+
+						return listMap;
+
+					}
+					catch (Exception e)
+					{
+
+						if (e.getMessage() != null)
+						{
+							Log.e(App.TAG, e.getMessage());
+						}
+
+					}
+
+					return null;
+
+				}
+
+				@Override
+				protected void onPostExecute(HashMap<String, String> result)
+				{
+					super.onPostExecute(result);
+					if (result != null)
+					{
+						HashMapAdapter adapter = new HashMapAdapter(result);
+						listView.setAdapter(adapter);
+					}
+
+				}
+
+			}
+					
+				});
+				dialog.show();
 
 				return true;
 			}

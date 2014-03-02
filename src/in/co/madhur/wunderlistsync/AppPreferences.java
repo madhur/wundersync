@@ -28,7 +28,8 @@ public class AppPreferences
 		WUNDER_USERNAME("wunder_username"),
 		WUNDER_PASSWORD("wunder_password"),
 		TOKEN("wunder_token"),
-		WUNDER_CREDENTIALS("wunder_credentials");
+		WUNDER_CREDENTIALS("wunder_credentials"),
+		SELECT_SYNC_LISTS("select_sync_list");
 		
 		
 		public final String key;

@@ -1,17 +1,22 @@
 package in.co.madhur.wunderlistsync.database;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.api.services.tasks.model.Task;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatatypeMismatchException;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import in.co.madhur.wunderlistsync.App;
-import in.co.madhur.wunderlistsync.api.WunderTask;
+import in.co.madhur.wunderlistsync.TaskSyncState;
+import in.co.madhur.wunderlistsync.api.model.WList;
+import in.co.madhur.wunderlistsync.api.model.WTask;
+import in.co.madhur.wunderlistsync.database.WunderSyncContract.AllWLists;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.GoogleTasks;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderTasks;
 
@@ -35,7 +40,7 @@ public class DbHelper
 
 	}
 
-	public void WriteWunderTasks(List<WunderTask> tasks) throws Exception
+	public void WriteWunderTasks(List<WTask> tasks) throws Exception
 	{
 		SQLiteDatabase database = db.getWritableDatabase();
 
@@ -97,15 +102,19 @@ public class DbHelper
 		{
 			String sql1 = String.format("delete from %s", WunderTasks.OLD_TABLE_NAME);
 			String sql2 = String.format("delete from %s", GoogleTasks.OLD_TABLE_NAME);
+			String sql3 = String.format("delete from %s", AllWLists.OLD_TABLE_NAME);
 
-			String sql3 = String.format("INSERT INTO %s SELECT * FROM %s", WunderTasks.OLD_TABLE_NAME, WunderTasks.TABLE_NAME);
-			String sql4 = String.format("INSERT INTO %s SELECT * FROM %s", GoogleTasks.OLD_TABLE_NAME, GoogleTasks.TABLE_NAME);
+			String sql4 = String.format("INSERT INTO %s SELECT * FROM %s", WunderTasks.OLD_TABLE_NAME, WunderTasks.TABLE_NAME);
+			String sql5 = String.format("INSERT INTO %s SELECT * FROM %s", GoogleTasks.OLD_TABLE_NAME, GoogleTasks.TABLE_NAME);
+			String sql6 = String.format("INSERT INTO %s SELECT * FROM %s", AllWLists.OLD_TABLE_NAME, AllWLists.TABLE_NAME);
 
 			database.beginTransaction();
 			database.execSQL(sql1);
 			database.execSQL(sql2);
 			database.execSQL(sql3);
 			database.execSQL(sql4);
+			database.execSQL(sql5);
+			database.execSQL(sql6);
 			database.setTransactionSuccessful();
 			// database.endTransaction();
 		}
@@ -130,10 +139,12 @@ public class DbHelper
 
 			String sql1 = String.format("delete from %s", WunderTasks.TABLE_NAME);
 			String sql2 = String.format("delete from %s", GoogleTasks.TABLE_NAME);
-			
+			String sql3 = String.format("delete from %s", AllWLists.TABLE_NAME);
+
 			database.beginTransaction();
 			database.execSQL(sql1);
 			database.execSQL(sql2);
+			database.execSQL(sql3);
 			database.setTransactionSuccessful();
 			// database.endTransaction();
 		}
@@ -150,40 +161,69 @@ public class DbHelper
 
 	}
 
-	public void writeGoogleTasks(List<Task> tasks) throws Exception
+	public List<WList> ReadLists()
 	{
-		
+
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		Cursor c = database.query(AllWLists.OLD_TABLE_NAME, // The table to
+															// query
+				null, // The columns to return
+				null, // The columns for the WHERE clause
+				null, // The values for the WHERE clause
+				null, // don't group the rows
+				null, // don't filter by row groups
+				null // The sort order
+		);
+
+		List<WList> wList = new ArrayList<WList>();
+		WList listObj;
+		c.moveToFirst();
+		do
+		{
+			listObj = new WList();
+			listObj.setId(c.getString(c.getColumnIndexOrThrow(AllWLists._ID)));
+			listObj.setTitle(c.getString(c.getColumnIndexOrThrow(AllWLists.TITLE)));
+			listObj.setOwner_id(c.getString(c.getColumnIndexOrThrow(AllWLists.OWNER_ID)));
+			listObj.setUpdated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.UPDATED_AT)));
+			listObj.setCreated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.CREATED_AT)));
+
+			wList.add(listObj);
+
+		}
+		while (c.moveToNext());
+
+		return wList;
+
+	}
+
+	public void WriteLists(List<WList> lists) throws Exception
+	{
+
 		SQLiteDatabase database = db.getWritableDatabase();
 
 		try
 		{
 
-			String sql = "INSERT INTO " + GoogleTasks.TABLE_NAME
-					+ " VALUES (?,?,?,?,?,?,?,?,?);";
+			String sql = "INSERT INTO " + AllWLists.TABLE_NAME
+					+ " VALUES (?,?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
-			for (int i = 0; i < tasks.size(); i++)
+			for (int i = 0; i < lists.size(); i++)
 			{
 				statement.clearBindings();
 
-				statement.bindString(1, tasks.get(i).getId());
+				statement.bindString(1, lists.get(i).getId());
 
-				statement.bindString(2, tasks.get(i).getTitle());
+				statement.bindString(2, lists.get(i).getTitle());
 
-				statement.bindString(3, tasks.get(i).getTitle());
+				statement.bindString(3, lists.get(i).getOwner_id());
 
-				statement.bindString(4, tasks.get(i).getStatus());
+				statement.bindString(4, lists.get(i).getCreated_at());
 
-				statement.bindString(5, tasks.get(i).getDue().toString());
+				statement.bindString(5, lists.get(i).getUpdated_at());
 
-				statement.bindString(6, tasks.get(i).getCompleted().toString());
-
-				statement.bindString(7, tasks.get(i).getDeleted().toString());
-
-				statement.bindString(8, tasks.get(i).getUpdated().toString());
-
-				statement.bindString(9, tasks.get(i).getNotes());
-
+				statement.bindString(6, lists.get(i).getUpdated_at());
 
 				statement.execute();
 			}
@@ -194,6 +234,76 @@ public class DbHelper
 		catch (Exception e)
 		{
 			Log.e(App.TAG, e.getMessage());
+			throw e;
+
+		}
+		finally
+		{
+			database.endTransaction();
+			database.close();
+		}
+
+	}
+
+	public void writeGoogleTasks(List<Task> tasks) throws Exception
+	{
+
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		try
+		{
+
+			String sql = "INSERT INTO " + GoogleTasks.TABLE_NAME
+					+ " VALUES (?,?,?,?,?,?,?,?);";
+			SQLiteStatement statement = database.compileStatement(sql);
+			database.beginTransaction();
+			for (int i = 0; i < tasks.size(); i++)
+			{
+				statement.clearBindings();
+
+				statement.bindString(1, tasks.get(i).getId());
+
+				statement.bindString(2, tasks.get(i).getTitle());
+
+				statement.bindString(3, tasks.get(i).getStatus());
+
+				if (tasks.get(i).getDue() != null)
+					statement.bindString(4, tasks.get(i).getDue().toString());
+				else
+					statement.bindString(4, "");
+
+				if (tasks.get(i).getCompleted() != null)
+					statement.bindString(5, tasks.get(i).getCompleted().toString());
+				else
+					statement.bindString(5, "");
+
+				if (tasks.get(i).getDeleted() != null)
+					statement.bindString(6, tasks.get(i).getDeleted().toString());
+				else
+					statement.bindString(6, "");
+
+				if (tasks.get(i).getUpdated() != null)
+					statement.bindString(7, tasks.get(i).getUpdated().toString());
+				else
+					statement.bindString(7, "");
+
+				if (tasks.get(i).getNotes() != null)
+					statement.bindString(8, tasks.get(i).getNotes());
+				else
+					statement.bindString(8, "");
+
+				statement.execute();
+			}
+
+			database.setTransactionSuccessful();
+			// database.endTransaction();
+		}
+		catch (Exception e)
+		{
+			if (e.getMessage() != null)
+			{
+				Log.e(App.TAG, e.getMessage());
+			}
 			throw e;
 
 		}
