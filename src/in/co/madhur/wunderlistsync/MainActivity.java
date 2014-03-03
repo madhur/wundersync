@@ -1,11 +1,8 @@
 package in.co.madhur.wunderlistsync;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.api.client.extensions.android.http.AndroidHttp;
@@ -13,19 +10,17 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.TasksScopes;
-import com.squareup.otto.Subscribe;
-
 import in.co.madhur.wunderlistsync.AppPreferences.Keys;
 import in.co.madhur.wunderlistsync.api.AuthError;
 import in.co.madhur.wunderlistsync.api.AuthException;
 import in.co.madhur.wunderlistsync.api.WunderList;
-import in.co.madhur.wunderlistsync.api.model.LoginResponse;
 import in.co.madhur.wunderlistsync.api.model.WList;
 import in.co.madhur.wunderlistsync.database.DbHelper;
-import in.co.madhur.wunderlistsync.gtasks.*;
 import in.co.madhur.wunderlistsync.service.WunderSyncService;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
@@ -39,17 +34,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnShowListener;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.support.v4.app.DialogFragment;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
-import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -73,6 +63,17 @@ public class MainActivity extends PreferenceActivity
 	final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
 
 	final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+	
+	private OnPreferenceChangeListener listPreferenceChangeListerner = new OnPreferenceChangeListener()
+	{
+
+		@Override
+		public boolean onPreferenceChange(Preference preference, Object newValue)
+		{
+			UpdateLabel((ListPreference) preference, newValue.toString());
+			return true;
+		}
+	};
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -100,6 +101,29 @@ public class MainActivity extends PreferenceActivity
 		// }
 		App.getEventBus().register(statusPrefence);
 		SetListeners();
+		
+		UpdateLabel((ListPreference) findPreference(Keys.AUTO_SYNC_SCHEDULE.key), null);
+		UpdateSummary(findPreference(Keys.GOOGLE_CONNECTED.key), null);
+	}
+
+	private void UpdateSummary(Preference googlePreference, Boolean newValue)
+	{
+		CheckBoxPreference isGoogleConnectedPreference = (CheckBoxPreference) googlePreference;
+		if(newValue==null)
+		{
+			newValue=isGoogleConnectedPreference.isChecked();
+		}
+		
+		if (newValue)
+		{
+			isGoogleConnectedPreference.setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+		}
+		else
+		{
+			isGoogleConnectedPreference.setSummary(getString(R.string.ui_connected_desc));
+			
+		}
+		
 	}
 
 	@Override
@@ -115,6 +139,24 @@ public class MainActivity extends PreferenceActivity
 	{
 		super.onDestroy();
 	}
+	
+	private void UpdateLabel(ListPreference listPreference, String newValue)
+	{
+
+		if (newValue == null)
+		{
+			newValue = listPreference.getValue();
+		}
+
+		int index = listPreference.findIndexOfValue(newValue);
+		if (index != -1)
+		{
+			newValue = (String) listPreference.getEntries()[index];
+			listPreference.setTitle(newValue);
+		}
+
+	}
+
 
 	/**
 	 * 
@@ -200,6 +242,9 @@ public class MainActivity extends PreferenceActivity
 
 	private void SetListeners()
 	{
+		
+		findPreference(Keys.AUTO_SYNC_SCHEDULE.key).setOnPreferenceChangeListener(listPreferenceChangeListerner);
+		
 		findPreference(Keys.GOOGLE_CONNECTED.key).setOnPreferenceChangeListener(new OnPreferenceChangeListener()
 		{
 
@@ -242,9 +287,10 @@ public class MainActivity extends PreferenceActivity
 
 						credential.setSelectedAccountName(appPreferences.GetUserName());
 						service = new com.google.api.services.tasks.Tasks.Builder(httpTransport, jsonFactory, credential).setApplicationName("WunderSync").build();
-						preference.setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
-						// getString(R.string.)
+						UpdateSummary(preference, (Boolean) newValue);
 					}
+					
+					
 
 				}
 				else
@@ -658,6 +704,8 @@ public class MainActivity extends PreferenceActivity
 						credential.setSelectedAccountName(accountName);
 						appPreferences.SetUserName(accountName);
 						findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
+						
+						UpdateSummary(findPreference(Keys.GOOGLE_CONNECTED.key), true);
 						// AsyncLoadTasks.run(this);
 					}
 				}
