@@ -100,6 +100,15 @@ public class AppPreferences
 	}
 	
 	
+	
+	public String[] getSelectedListsIds()
+	{
+		String lists=GetMetadata(Keys.SELECT_SYNC_LISTS);
+		
+		return lists.split(";");
+		
+	}
+	
 	public String GetWunderPassword()
 	{
 		

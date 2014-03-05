@@ -112,6 +112,8 @@ public class WTask
 
 	public Object getDeleted_at()
 	{
+		if(TextUtils.isEmpty((CharSequence) deleted_at))
+			return "";
 		return deleted_at;
 	}
 

@@ -18,7 +18,8 @@ public class WunderList
 	private static RestAdapter restAdapter;
 	private static WunderAPI service;
 	private static String token;
-
+	private static String userId;
+	
 	private WunderList()
 	{
 
@@ -47,8 +48,27 @@ public class WunderList
 
 		// Save the token
 		token = response.getToken();
-
+		userId=	response.getId();
+		
 		return response;
+	}
+	
+	
+	public  Me GetUserInfo() throws NetworkException
+	{
+		Me userInfo = null;
+
+		try
+		{
+			userInfo = service.getUserInfo(token);
+		}
+		catch (RetrofitError e)
+		{
+			if(e.isNetworkError())
+				throw new NetworkException(APIConsts.NETWORK_ERROR);
+		}
+
+		return userInfo;
 	}
 
 	public void SetToken(String newToken)

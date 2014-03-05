@@ -26,9 +26,11 @@ import in.co.madhur.wunderlistsync.api.AuthException;
 import in.co.madhur.wunderlistsync.api.WunderAPI;
 import in.co.madhur.wunderlistsync.api.WunderList;
 import in.co.madhur.wunderlistsync.api.model.LoginResponse;
+import in.co.madhur.wunderlistsync.api.model.Me;
 import in.co.madhur.wunderlistsync.api.model.WList;
 import in.co.madhur.wunderlistsync.api.model.WTask;
 import in.co.madhur.wunderlistsync.database.DbHelper;
+import in.co.madhur.wunderlistsync.gtasks.GTaskHelper;
 import retrofit.RestAdapter;
 import android.app.Service;
 import android.content.Intent;
@@ -69,7 +71,7 @@ public class WunderSyncService extends Service
 		config.setPassword(preferences.GetWunderPassword());
 		config.setToken(preferences.GetMetadata(Keys.TOKEN));
 		config.setGoogleAccount(preferences.GetUserName());
-
+		config.setSelectedListIds(preferences.getSelectedListsIds());
 		Log.v(App.TAG, "Executing task");
 		new WunderSyncTask(config).execute(config);
 
@@ -116,6 +118,7 @@ public class WunderSyncService extends Service
 			LoginResponse loginResponse;
 			WunderList wunderList = null;
 			DbHelper dbHelper = null;
+			GTaskHelper taskHelper=null;
 
 			try
 			{
@@ -155,24 +158,28 @@ public class WunderSyncService extends Service
 
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_WUNDERLIST_TASKS));
 				
+				Me userInfo=wunderList.GetUserInfo();
+				
 				List<WList> lists=wunderList.GetLists();
 				
 				List<WTask> tasks = wunderList.GetTasks();
 
 				dbHelper = DbHelper.getInstance(WunderSyncService.this);
-
+				
+				dbHelper.EnsureUsers(config.getGoogleAccount(), config.getUsername(), userInfo.getId());
+				
 				// Try dropping the tables if previosuly exists. This can happen
 				// if previous sync was incorrectly aborted
-				try
-				{
-					Log.d(App.TAG, "Truncating previous tables");
-					dbHelper.TruncateTables();
-				}
-				catch (SQLiteException e)
-				{
-					// Silently catch and continue, since this is not an error
-					Log.d(App.TAG, e.getMessage());
-				}
+//				try
+//				{
+//					Log.d(App.TAG, "Truncating previous tables");
+//					dbHelper.TruncateTables();
+//				}
+//				catch (SQLiteException e)
+//				{
+//					// Silently catch and continue, since this is not an error
+//					Log.d(App.TAG, e.getMessage());
+//				}
 				
 				Log.d(App.TAG, "Writing wunderlists to db");
 				dbHelper.WriteLists(lists);
@@ -181,16 +188,19 @@ public class WunderSyncService extends Service
 				dbHelper.WriteWunderTasks(tasks);
 
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_GOOGLE_TASKS));
-				List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
+				taskHelper=GTaskHelper.GetInstance(taskService);
+				
+				//List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
+				taskHelper.CreateOrEnsureLists(lists, config.getSelectedListIds());
 
-				Log.d(App.TAG, "Writing google tasks to db");
-				dbHelper.writeGoogleTasks(gTasks);
+				//Log.d(App.TAG, "Writing google tasks to db");
+				//dbHelper.writeGoogleTasks(gTasks);
 
-				Log.d(App.TAG, "moving data to old");
-				dbHelper.MoveData();
+//				Log.d(App.TAG, "moving data to old");
+//				dbHelper.MoveData();
 
-				Log.d(App.TAG, "Truncating tables");
-				dbHelper.TruncateTables();
+//				Log.d(App.TAG, "Truncating tables");
+//				dbHelper.TruncateTables();
 
 			}
 			catch(UserRecoverableAuthIOException e)
@@ -207,8 +217,6 @@ public class WunderSyncService extends Service
 			}
 			catch (Exception e)
 			{
-				// Log.e(App.TAG, e.getClass().getName());
-
 				if (e.getMessage() != null)
 				{
 					Log.e(App.TAG, e.getMessage());

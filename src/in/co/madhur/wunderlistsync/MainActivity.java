@@ -1,5 +1,6 @@
 package in.co.madhur.wunderlistsync;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,6 +37,7 @@ import android.content.DialogInterface.OnShowListener;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -63,7 +65,7 @@ public class MainActivity extends PreferenceActivity
 	final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
 
 	final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-	
+
 	private OnPreferenceChangeListener listPreferenceChangeListerner = new OnPreferenceChangeListener()
 	{
 
@@ -101,29 +103,30 @@ public class MainActivity extends PreferenceActivity
 		// }
 		App.getEventBus().register(statusPrefence);
 		SetListeners();
-		
+
 		UpdateLabel((ListPreference) findPreference(Keys.AUTO_SYNC_SCHEDULE.key), null);
-		UpdateSummary(findPreference(Keys.GOOGLE_CONNECTED.key), null);
+		UpdateConnected(findPreference(Keys.GOOGLE_CONNECTED.key), null);
 	}
 
-	private void UpdateSummary(Preference googlePreference, Boolean newValue)
+	private void UpdateConnected(Preference googlePreference, Boolean newValue)
 	{
 		CheckBoxPreference isGoogleConnectedPreference = (CheckBoxPreference) googlePreference;
-		if(newValue==null)
+		if (newValue == null)
 		{
-			newValue=isGoogleConnectedPreference.isChecked();
+			newValue = isGoogleConnectedPreference.isChecked();
 		}
-		
-		if (newValue)
+
+		if (!TextUtils.isEmpty(appPreferences.GetUserName()))
 		{
+			isGoogleConnectedPreference.setChecked(true);
 			isGoogleConnectedPreference.setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
 		}
 		else
 		{
+			isGoogleConnectedPreference.setChecked(false);
 			isGoogleConnectedPreference.setSummary(getString(R.string.ui_connected_desc));
-			
 		}
-		
+
 	}
 
 	@Override
@@ -139,7 +142,7 @@ public class MainActivity extends PreferenceActivity
 	{
 		super.onDestroy();
 	}
-	
+
 	private void UpdateLabel(ListPreference listPreference, String newValue)
 	{
 
@@ -157,7 +160,6 @@ public class MainActivity extends PreferenceActivity
 
 	}
 
-
 	/**
 	 * 
 	 */
@@ -170,10 +172,10 @@ public class MainActivity extends PreferenceActivity
 			showDialog(Dialogs.MISSING_CREDENTIALS.ordinal());
 			return;
 		}
-		
-		if(appPreferences.GetUserName().equalsIgnoreCase(""))
+
+		if (appPreferences.GetUserName().equalsIgnoreCase(""))
 		{
-			
+
 			showDialog(Dialogs.MISSING_GOOGLE_CONNECT.ordinal());
 			return;
 		}
@@ -196,13 +198,13 @@ public class MainActivity extends PreferenceActivity
 				break;
 
 			case MISSING_GOOGLE_CONNECT:
-				title=getString(R.string.app_name);
-				msg=getString(R.string.missing_google_cred);
+				title = getString(R.string.app_name);
+				msg = getString(R.string.missing_google_cred);
 				break;
-				
+
 			case START_SYNC:
-				title=getString(R.string.app_name);
-				msg=getString(R.string.start_sync_dialog);
+				title = getString(R.string.app_name);
+				msg = getString(R.string.start_sync_dialog);
 				return new AlertDialog.Builder(this).setTitle(title).setMessage(msg).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener()
 				{
 					@Override
@@ -212,16 +214,15 @@ public class MainActivity extends PreferenceActivity
 					}
 				}).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener()
 				{
-					
+
 					@Override
 					public void onClick(DialogInterface dialog, int which)
 					{
 						dialog.cancel();
-						
+
 					}
 				}).create();
-				
-				
+
 			default:
 				return null;
 		}
@@ -242,9 +243,9 @@ public class MainActivity extends PreferenceActivity
 
 	private void SetListeners()
 	{
-		
+
 		findPreference(Keys.AUTO_SYNC_SCHEDULE.key).setOnPreferenceChangeListener(listPreferenceChangeListerner);
-		
+
 		findPreference(Keys.GOOGLE_CONNECTED.key).setOnPreferenceChangeListener(new OnPreferenceChangeListener()
 		{
 
@@ -287,10 +288,8 @@ public class MainActivity extends PreferenceActivity
 
 						credential.setSelectedAccountName(appPreferences.GetUserName());
 						service = new com.google.api.services.tasks.Tasks.Builder(httpTransport, jsonFactory, credential).setApplicationName("WunderSync").build();
-						UpdateSummary(preference, (Boolean) newValue);
+						UpdateConnected(preference, (Boolean) newValue);
 					}
-					
-					
 
 				}
 				else
@@ -301,9 +300,10 @@ public class MainActivity extends PreferenceActivity
 					appPreferences.SetUserName("");
 					preference.setSummary(getString(R.string.not_connected));
 					appPreferences.SetMetadata(Keys.LAST_SYNC_DATE, "");
+					UpdateConnected(preference, (Boolean) newValue);
 				}
 
-				return true;
+				return false;
 			}
 		});
 
@@ -347,8 +347,6 @@ public class MainActivity extends PreferenceActivity
 						Log.v(App.TAG, "onShow");
 
 						Button b = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
-						// Button cancelButton = ((AlertDialog)
-						// dialog).getButton(AlertDialog.BUTTON_NEGATIVE);
 						Button refreshButton = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_NEUTRAL);
 
 						listView = (ListView) loginView.findViewById(R.id.wunder_listview);
@@ -374,10 +372,25 @@ public class MainActivity extends PreferenceActivity
 							public void onClick(View view)
 							{
 
-								// Save into old_lists table into database along
+								// Save into old_lists table into preferences
+								// along
 								// with selected values
 								HashMapAdapter adapter = (HashMapAdapter) listView.getAdapter();
-								long[] checkIds = listView.getCheckedItemIds();
+								// long[] checkIds =
+								// listView.getCheckedItemIds();
+								SparseBooleanArray boolArray = listView.getCheckedItemPositions();
+								StringBuilder sb = new StringBuilder();
+								for (int i = 0; i < adapter.getCount(); ++i)
+								{
+									if (boolArray.get(i))
+									{
+										sb.append(adapter.getItem(i).getId());
+										sb.append(';');
+									}
+
+								}
+
+								appPreferences.SetMetadata(Keys.SELECT_SYNC_LISTS, sb.toString());
 
 								dialog.dismiss();
 							}
@@ -471,11 +484,11 @@ public class MainActivity extends PreferenceActivity
 									// Get list from REST API
 									lists = wunderList.GetLists();
 
-									// purge the previous data
-									dbHelper.TruncateListsOld();
+//									// purge the previous data
+//									dbHelper.TruncateListsOld();
 
 									// Write lists into the database
-									dbHelper.WriteListsOld(lists);
+									dbHelper.WriteLists(lists);
 
 								}
 								else
@@ -516,11 +529,11 @@ public class MainActivity extends PreferenceActivity
 										// Get list from REST API
 										lists = wunderList.GetLists();
 
-										// purge the previous data
-										dbHelper.TruncateListsOld();
+//										// purge the previous data
+//										dbHelper.TruncateListsOld();
 
 										// Write lists into the database
-										dbHelper.WriteListsOld(lists);
+										dbHelper.WriteLists(lists);
 									}
 								}
 
@@ -551,6 +564,15 @@ public class MainActivity extends PreferenceActivity
 								HashMapAdapter adapter = new HashMapAdapter(result.getLists());
 								listView.setAdapter(adapter);
 								listView.setVisibility(ListView.VISIBLE);
+
+								String splitItems[] =appPreferences.getSelectedListsIds();
+
+								for (int i = 0; i < adapter.getCount(); ++i)
+								{
+									if (Arrays.asList(splitItems).contains(adapter.getItem(i).getId()))
+										listView.setItemChecked(i, true);
+								}
+
 							}
 							else
 							{
@@ -670,9 +692,9 @@ public class MainActivity extends PreferenceActivity
 				if (resultCode == Activity.RESULT_OK)
 				{
 					findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
-					
+
 					haveGooglePlayServices();
-					
+
 				}
 				else
 				{
@@ -682,10 +704,9 @@ public class MainActivity extends PreferenceActivity
 			case Consts.REQUEST_AUTHORIZATION:
 				if (resultCode == Activity.RESULT_OK)
 				{
-					
 
 					findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
-					
+
 					showSyncDialog();
 
 				}
@@ -704,8 +725,8 @@ public class MainActivity extends PreferenceActivity
 						credential.setSelectedAccountName(accountName);
 						appPreferences.SetUserName(accountName);
 						findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
-						
-						UpdateSummary(findPreference(Keys.GOOGLE_CONNECTED.key), true);
+
+						UpdateConnected(findPreference(Keys.GOOGLE_CONNECTED.key), true);
 						// AsyncLoadTasks.run(this);
 					}
 				}
@@ -724,7 +745,7 @@ public class MainActivity extends PreferenceActivity
 		else
 		{
 			showSyncDialog();
-			
+
 		}
 	}
 
@@ -739,12 +760,12 @@ public class MainActivity extends PreferenceActivity
 			}
 		});
 	}
-	
+
 	private void showSyncDialog()
 	{
-		if(!appPreferences.isEmptyCred() && appPreferences.isGoogleConnected())
+		if (!appPreferences.isEmptyCred() && appPreferences.isGoogleConnected())
 			showDialog(Dialogs.START_SYNC.ordinal());
-		
+
 	}
 
 	private boolean checkGooglePlayServicesAvailable()
@@ -752,7 +773,7 @@ public class MainActivity extends PreferenceActivity
 		final int connectionStatusCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
 		if (GooglePlayServicesUtil.isUserRecoverableError(connectionStatusCode))
 		{
-			 showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
+			showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
 			return false;
 		}
 		return true;

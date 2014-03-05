@@ -11,7 +11,7 @@
     <string name="ui_auto_backup_schedule_label">Regular schedule</string>
     <string name="ui_auto_backup_schedule_desc">When to Sync</string>
     <string name="ui_wifi_only_label">Require Wifi</string>
-    <string name="ui_wifi_only_desc">Only backup when connected to Wifi</string>
+    <string name="ui_wifi_only_desc">Only sync when connected to Wifi</string>
     <string name="ui_settings_advanced_label">Advanced settings</string>
     <string name="ui_settings_advanced_desc">Set advanced preferences.</string>
     <string name="ui_auto_backup_settings_label">Sync Settings</string>

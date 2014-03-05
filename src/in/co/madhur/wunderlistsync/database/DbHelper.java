@@ -18,7 +18,9 @@ import in.co.madhur.wunderlistsync.api.model.WList;
 import in.co.madhur.wunderlistsync.api.model.WTask;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.AllWLists;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.GoogleTasks;
+import in.co.madhur.wunderlistsync.database.WunderSyncContract.GoogleUser;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderTasks;
+import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderUser;
 
 public class DbHelper
 {
@@ -48,7 +50,7 @@ public class DbHelper
 		{
 
 			String sql = "INSERT INTO " + WunderTasks.TABLE_NAME
-					+ " VALUES (?,?,?,?,?,?,?,?,?,?);";
+					+ " VALUES (?,?,?,?,?,?,?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
 			for (int i = 0; i < tasks.size(); i++)
@@ -74,6 +76,8 @@ public class DbHelper
 				statement.bindString(9, tasks.get(i).getCompleted_at());
 
 				statement.bindString(10, tasks.get(i).getCompleted_by_id().toString());
+
+				statement.bindString(11, tasks.get(i).getDeleted_at().toString());
 
 				statement.execute();
 			}
@@ -129,7 +133,7 @@ public class DbHelper
 			database.close();
 		}
 	}
-	
+
 	public void TruncateListsOld() throws Exception
 	{
 		SQLiteDatabase database = db.getWritableDatabase();
@@ -225,8 +229,9 @@ public class DbHelper
 		return wList;
 
 	}
-	
-	public void WriteLists(List<WList> lists, String tableName) throws Exception
+
+	private void WriteLists(List<WList> lists, String tableName)
+			throws Exception
 	{
 
 		SQLiteDatabase database = db.getWritableDatabase();
@@ -234,8 +239,10 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT INTO " + tableName
-					+ " VALUES (?,?,?,?,?,?);";
+			String sql = "INSERT INTO " + tableName + "(" + AllWLists._ID + ","
+					+ AllWLists.TITLE + "," + AllWLists.OWNER_ID + ","
+					+ AllWLists.CREATED_AT + "," + AllWLists.UPDATED_AT
+					+ ") VALUES (?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
 			for (int i = 0; i < lists.size(); i++)
@@ -251,8 +258,6 @@ public class DbHelper
 				statement.bindString(4, lists.get(i).getCreated_at());
 
 				statement.bindString(5, lists.get(i).getUpdated_at());
-
-				statement.bindString(6, lists.get(i).getUpdated_at());
 
 				statement.execute();
 			}
@@ -272,19 +277,113 @@ public class DbHelper
 			database.close();
 		}
 
-		
 	}
-	
+
+	public void EnsureUsers(String googleUser, String wunderUserEmail, String wunderUserId)
+			throws Exception
+	{
+
+		EnsureGoogleUser(googleUser);
+		EnsureWunderUser(wunderUserEmail, wunderUserId);
+
+	}
+
+	public void DeleteAllTables() throws Exception
+	{
+
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		String[] deleteEntries = WunderSyncDB.GetDeleteEntries();
+
+		try
+		{
+
+			database.beginTransaction();
+
+			for (int i = 0; i < deleteEntries.length; ++i)
+			{
+				database.execSQL(deleteEntries[i]);
+			}
+			database.setTransactionSuccessful();
+		}
+		catch (Exception e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.endTransaction();
+			database.close();
+		}
+
+	}
+
+	private void EnsureGoogleUser(String googleUser) throws Exception
+	{
+
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		try
+		{
+			String sql1 = String.format("INSERT OR REPLACE INTO %s (%s) VALUES ('%s' );", GoogleUser.TABLE_NAME, GoogleUser.EMAIL, googleUser);
+			Log.d(App.TAG, sql1);
+
+			database.beginTransaction();
+			database.execSQL(sql1);
+			database.setTransactionSuccessful();
+		}
+		catch (Exception e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.endTransaction();
+			database.close();
+		}
+
+	}
+
+	private void EnsureWunderUser(String wunderUserEmail, String wunderUserId)
+			throws Exception
+	{
+
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		try
+		{
+			String sql1 = String.format("INSERT OR REPLACE INTO %s (%s, %s) VALUES ('%s', '%s' );", WunderUser.TABLE_NAME, WunderUser._ID, WunderUser.EMAIL, wunderUserId, wunderUserEmail);
+			Log.d(App.TAG, sql1);
+
+			database.beginTransaction();
+			database.execSQL(sql1);
+			database.setTransactionSuccessful();
+		}
+		catch (Exception e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.endTransaction();
+			database.close();
+		}
+
+	}
+
 	public void WriteListsOld(List<WList> lists) throws Exception
 	{
-		
+
 		WriteLists(lists, AllWLists.OLD_TABLE_NAME);
 
 	}
 
 	public void WriteLists(List<WList> lists) throws Exception
 	{
-		
+
 		WriteLists(lists, AllWLists.TABLE_NAME);
 
 	}

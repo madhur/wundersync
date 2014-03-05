@@ -1,6 +1,9 @@
 package in.co.madhur.wunderlistsync;
 
+import in.co.madhur.wunderlistsync.api.model.WList;
+
 import java.util.Date;
+import java.util.List;
 
 public class TaskSyncConfig
 {
@@ -12,6 +15,7 @@ public class TaskSyncConfig
 	private String password;
 	private String token;
 	private String googleAccount;
+	private String[] selectedListIds;
 	
 	public TaskSyncConfig(boolean isOneWay, boolean isManual, Date lastSyncDate)
 	{
@@ -93,4 +97,18 @@ public class TaskSyncConfig
 	{
 		this.googleAccount = googleAccount;
 	}
+
+
+	public String[] getSelectedListIds()
+	{
+		return selectedListIds;
+	}
+
+
+	public void setSelectedListIds(String[] selectedListIds)
+	{
+		this.selectedListIds = selectedListIds;
+	}
+
+
 }
