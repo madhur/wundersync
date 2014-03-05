@@ -59,7 +59,8 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ WunderTasks.COMPLETED_AT
 			+ TEXT_TYPE
 			+ COMMA_SEP
-			+ WunderTasks.COMPLETED_BY_ID + " )";
+			+ WunderTasks.COMPLETED_BY_ID +  TEXT_TYPE
+			+ COMMA_SEP + WunderTasks.DELETED_AT + TEXT_TYPE+ " )";
 
 	private static final String SQL_CREATE_WUNDERLISTS = "CREATE TABLE " + "%s"
 			+ " ("

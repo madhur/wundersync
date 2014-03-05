@@ -188,7 +188,7 @@ public class WunderSyncService extends Service
 				dbHelper.WriteWunderTasks(tasks);
 
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_GOOGLE_TASKS));
-				taskHelper=GTaskHelper.GetInstance(taskService);
+				taskHelper=GTaskHelper.GetInstance(taskService, WunderSyncService.this);
 				
 				//List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
 				taskHelper.CreateOrEnsureLists(lists, config.getSelectedListIds());

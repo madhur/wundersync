@@ -5,8 +5,10 @@ import java.util.List;
 
 import com.google.api.services.tasks.model.Task;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatatypeMismatchException;
 import android.database.sqlite.SQLiteStatement;
@@ -49,7 +51,7 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT INTO " + WunderTasks.TABLE_NAME
+			String sql = "INSERT OR REPLACE INTO " + WunderTasks.TABLE_NAME
 					+ " VALUES (?,?,?,?,?,?,?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
@@ -239,10 +241,10 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT INTO " + tableName + "(" + AllWLists._ID + ","
-					+ AllWLists.TITLE + "," + AllWLists.OWNER_ID + ","
-					+ AllWLists.CREATED_AT + "," + AllWLists.UPDATED_AT
-					+ ") VALUES (?,?,?,?,?);";
+			String sql = "INSERT OR REPLACE INTO " + tableName + "("
+					+ AllWLists._ID + "," + AllWLists.TITLE + ","
+					+ AllWLists.OWNER_ID + "," + AllWLists.CREATED_AT + ","
+					+ AllWLists.UPDATED_AT + ") VALUES (?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
 			for (int i = 0; i < lists.size(); i++)
@@ -439,7 +441,6 @@ public class DbHelper
 			}
 
 			database.setTransactionSuccessful();
-			// database.endTransaction();
 		}
 		catch (Exception e)
 		{
@@ -458,4 +459,54 @@ public class DbHelper
 
 	}
 
+	public String getGoogleListIdofWlist(String id)
+	{
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		try
+		{
+			Cursor c = database.query(AllWLists.TABLE_NAME, new String[] { AllWLists.GOOGLE_LIST_ID }, AllWLists._ID
+					+ "=?", new String[] { id }, null, null, null);
+			if (c.moveToFirst())
+			{
+				return c.getString(c.getColumnIndexOrThrow(AllWLists.GOOGLE_LIST_ID));
+
+			}
+		}
+		catch (SQLException e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.close();
+		}
+
+		return "";
+
+	}
+
+	public void setGoogleListofWlist(String wListid, String googleListId)
+	{
+		SQLiteDatabase database = db.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put(AllWLists.GOOGLE_LIST_ID, googleListId);
+		values.put(AllWLists.ISSYNCED, Boolean.TRUE.toString());
+
+		try
+		{
+			database.update(AllWLists.TABLE_NAME, values, AllWLists._ID + "=?", new String[] { wListid });
+		}
+		catch (SQLException e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.close();
+		}
+
+	}
 }

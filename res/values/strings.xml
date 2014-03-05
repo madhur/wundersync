@@ -59,4 +59,8 @@
 	<string name="select_sync_list_desc">Select lists to sync</string>
 	<string name="error_refresh_internet">You must be connected to internet to refresh</string>
 	<string name="start_sync_dialog">The app is now ready to sync. Do you want to sync now?</string>
+	
+	<string name="action_reset">Reset</string>
+	<string name="action_about">About</string>
+	<string name="action_viewlog">View log</string>
 </resources>
