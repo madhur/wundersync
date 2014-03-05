@@ -51,8 +51,19 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT OR REPLACE INTO " + WunderTasks.TABLE_NAME
-					+ " VALUES (?,?,?,?,?,?,?,?,?,?,?);";
+			String sql = "INSERT OR REPLACE INTO " + WunderTasks.TABLE_NAME +"("
+					+ WunderTasks._ID + "," + WunderTasks.LIST_ID + "," + WunderTasks.TITLE + ","+ WunderTasks.OWNER_ID+ "," + WunderTasks.CREATED_AT
+					+","+ WunderTasks.CREATED_BY_ID+"," + WunderTasks.UPDATED_AT+ ","+ WunderTasks.STARRED+ "," + WunderTasks.COMPLETED_AT + "," 
+					+ WunderTasks.COMPLETED_BY_ID + "," + WunderTasks.DELETED_AT+ "," + WunderTasks.ISSYNCED +"," + WunderTasks.GOOGLE_LIST_ID +") "
+					+ " VALUES (?,?,?,?,?,?,?,?,?,?,?, " + "(SELECT " + WunderTasks.ISSYNCED + " FROM "+ WunderTasks.TABLE_NAME + " WHERE " + WunderTasks._ID+"=?),"+
+					"(SELECT " + WunderTasks.GOOGLE_LIST_ID + " FROM " + WunderTasks.TABLE_NAME+ " WHERE " + WunderTasks._ID+ "=?)"+
+					");";
+			
+			
+			
+			
+			
+			
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
 			for (int i = 0; i < tasks.size(); i++)
@@ -80,6 +91,9 @@ public class DbHelper
 				statement.bindString(10, tasks.get(i).getCompleted_by_id().toString());
 
 				statement.bindString(11, tasks.get(i).getDeleted_at().toString());
+				
+				statement.bindString(12, tasks.get(i).getId());
+				statement.bindString(13, tasks.get(i).getId());
 
 				statement.execute();
 			}
@@ -100,7 +114,7 @@ public class DbHelper
 		}
 	}
 
-	public void MoveData() throws Exception
+	private void MoveData() throws Exception
 	{
 		SQLiteDatabase database = db.getWritableDatabase();
 
@@ -136,7 +150,7 @@ public class DbHelper
 		}
 	}
 
-	public void TruncateListsOld() throws Exception
+	private void TruncateListsOld() throws Exception
 	{
 		SQLiteDatabase database = db.getWritableDatabase();
 
@@ -163,7 +177,7 @@ public class DbHelper
 
 	}
 
-	public void TruncateTables() throws Exception
+	private void TruncateTables() throws Exception
 	{
 		SQLiteDatabase database = db.getWritableDatabase();
 
@@ -244,8 +258,15 @@ public class DbHelper
 			String sql = "INSERT OR REPLACE INTO " + tableName + "("
 					+ AllWLists._ID + "," + AllWLists.TITLE + ","
 					+ AllWLists.OWNER_ID + "," + AllWLists.CREATED_AT + ","
-					+ AllWLists.UPDATED_AT + ") VALUES (?,?,?,?,?);";
+					+ AllWLists.UPDATED_AT + "," + AllWLists.ISSYNCED + ","+ AllWLists.GOOGLE_LIST_ID+") "+
+					"VALUES (?,?,?,?,?, " + "(SELECT "+ AllWLists.ISSYNCED + " FROM " + AllWLists.TABLE_NAME + " WHERE " + AllWLists._ID +"=?)," +
+					"(SELECT "+ AllWLists.GOOGLE_LIST_ID + " FROM " + AllWLists.TABLE_NAME + " WHERE " + AllWLists._ID +"=?)"+
+					");";
+			
+			Log.d(App.TAG, sql);
+		
 			SQLiteStatement statement = database.compileStatement(sql);
+			
 			database.beginTransaction();
 			for (int i = 0; i < lists.size(); i++)
 			{
@@ -260,6 +281,10 @@ public class DbHelper
 				statement.bindString(4, lists.get(i).getCreated_at());
 
 				statement.bindString(5, lists.get(i).getUpdated_at());
+				
+				statement.bindString(6, lists.get(i).getId());
+				
+				statement.bindString(7, lists.get(i).getId());
 
 				statement.execute();
 			}
@@ -459,7 +484,7 @@ public class DbHelper
 
 	}
 
-	public String getGoogleListIdofWlist(String id)
+	public String getGoogleListdofWlist(String id)
 	{
 		SQLiteDatabase database = db.getWritableDatabase();
 
@@ -508,5 +533,55 @@ public class DbHelper
 			database.close();
 		}
 
+	}
+
+	public String getGoogleTaskdofWTask(String id)
+	{
+		SQLiteDatabase database = db.getWritableDatabase();
+
+		try
+		{
+			Cursor c = database.query(WunderTasks.TABLE_NAME, new String[] { WunderTasks.GOOGLE_LIST_ID }, WunderTasks._ID
+					+ "=?", new String[] { id }, null, null, null);
+			if (c.moveToFirst())
+			{
+				return c.getString(c.getColumnIndexOrThrow(WunderTasks.GOOGLE_LIST_ID));
+
+			}
+		}
+		catch (SQLException e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.close();
+		}
+
+		return "";
+	}
+
+	public void setGoogleTaskofWTask(String wTaskId, String googleTaskId)
+	{
+		SQLiteDatabase database = db.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put(WunderTasks.GOOGLE_LIST_ID, googleTaskId);
+		values.put(WunderTasks.ISSYNCED, Boolean.TRUE.toString());
+
+		try
+		{
+			database.update(WunderTasks.TABLE_NAME, values, WunderTasks._ID + "=?", new String[] { wTaskId });
+		}
+		catch (SQLException e)
+		{
+			Log.e(App.TAG, e.getMessage());
+			throw e;
+		}
+		finally
+		{
+			database.close();
+		}
+		
 	}
 }

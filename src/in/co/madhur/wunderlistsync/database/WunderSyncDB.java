@@ -29,7 +29,7 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ TEXT_TYPE + " )";
 
 	private static final String SQL_CREATE_GOOGLEUSER = "CREATE TABLE " + "%s"
-			+ " (" + GoogleUser.EMAIL + TEXT_TYPE+  " PRIMARY KEY  " +")";
+			+ " (" + GoogleUser.EMAIL + TEXT_TYPE + " PRIMARY KEY  " + ")";
 
 	private static final String SQL_CREATE_WUNDERTASK = "CREATE TABLE " + "%s"
 			+ " ("
@@ -59,8 +59,22 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ WunderTasks.COMPLETED_AT
 			+ TEXT_TYPE
 			+ COMMA_SEP
-			+ WunderTasks.COMPLETED_BY_ID +  TEXT_TYPE
-			+ COMMA_SEP + WunderTasks.DELETED_AT + TEXT_TYPE+ " )";
+			+ WunderTasks.COMPLETED_BY_ID
+			+ TEXT_TYPE
+			+ COMMA_SEP
+			+ WunderTasks.DELETED_AT
+			+ TEXT_TYPE
+			+ COMMA_SEP
+			+ WunderTasks.ISSYNCED
+			+ TEXT_TYPE
+			+ DEFAULT
+			+ FALSE
+
+			+ COMMA_SEP
+			+ WunderTasks.GOOGLE_LIST_ID
+			+ TEXT_TYPE
+			+ DEFAULT
+			+ EMPTY + " )";
 
 	private static final String SQL_CREATE_WUNDERLISTS = "CREATE TABLE " + "%s"
 			+ " ("

@@ -190,11 +190,17 @@ public class WunderSyncService extends Service
 				publishProgress(new TaskSyncState(WunderSyncState.FETCH_GOOGLE_TASKS));
 				taskHelper=GTaskHelper.GetInstance(taskService, WunderSyncService.this);
 				
-				//List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
+				publishProgress(new TaskSyncState(WunderSyncState.SYNCING));
+			
 				taskHelper.CreateOrEnsureLists(lists, config.getSelectedListIds());
+				
+				taskHelper.CreateOrEnsureTasks(tasks, config.getSelectedListIds());
+				
+				taskHelper.DeleteEmptyLists();
 
 				//Log.d(App.TAG, "Writing google tasks to db");
-				//dbHelper.writeGoogleTasks(gTasks);
+				List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
+				dbHelper.writeGoogleTasks(gTasks);
 
 //				Log.d(App.TAG, "moving data to old");
 //				dbHelper.MoveData();

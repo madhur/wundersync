@@ -45,6 +45,10 @@ public final class WunderSyncContract
 		public static final String COMPLETED_AT = "completed_at";
 		public static final String COMPLETED_BY_ID = "completed_by_id";
 		public static final String DELETED_AT = "deleted_at";
+		
+		public static final String ISSYNCED = "issynced";
+		// add these columns
+		public static final String GOOGLE_LIST_ID="google_task_id";
 	}
 
 	public static abstract class GoogleTasks implements BaseColumns
@@ -61,6 +65,9 @@ public final class WunderSyncContract
 		public static final String DELETED = "deleted";
 		public static final String UPDATED = "updated";
 		public static final String NOTES = "notes";
+		public static final String ISSYNCED = "issynced";
+		// add these columns
+		public static final String GOOGLE_LIST_ID="google_task_id";
 
 	}
 	
