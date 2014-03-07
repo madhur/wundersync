@@ -8,9 +8,10 @@ import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderTasks;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderUser;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+
+import static in.co.madhur.wunderlistsync.database.DBConsts.*;
 
 public class WunderSyncDB extends SQLiteOpenHelper
 {
@@ -18,11 +19,7 @@ public class WunderSyncDB extends SQLiteOpenHelper
 	public static final int DATABASE_VERSION = 1;
 	public static final String DATABASE_NAME = "wundersync.db";
 
-	private static final String TEXT_TYPE = " TEXT";
-	private static final String COMMA_SEP = ",";
-	private static final String DEFAULT = " default";
-	private static final String FALSE = " false";
-	private static final String EMPTY = "''";
+	
 
 	private static final String SQL_CREATE_WUNDERUSER = "CREATE TABLE " + "%s"
 			+ " (" + WunderUser._ID + " TEXT PRIMARY KEY," + WunderUser.EMAIL
@@ -45,25 +42,25 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.CREATED_AT
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.CREATED_BY_ID
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.UPDATED_AT
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.STARRED
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.COMPLETED_AT
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.COMPLETED_BY_ID
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.DELETED_AT
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ WunderTasks.ISSYNCED
 			+ TEXT_TYPE
@@ -87,10 +84,10 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ AllWLists.CREATED_AT
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ AllWLists.UPDATED_AT
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ AllWLists.ISSYNCED
 			+ TEXT_TYPE
@@ -114,16 +111,16 @@ public class WunderSyncDB extends SQLiteOpenHelper
 			+ TEXT_TYPE
 			+ COMMA_SEP
 			+ GoogleTasks.DUE
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ GoogleTasks.COMPLETED
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ GoogleTasks.DELETED
-			+ TEXT_TYPE
+			+ INTEGER_TYPE
 			+ COMMA_SEP
 			+ GoogleTasks.UPDATED
-			+ TEXT_TYPE + COMMA_SEP + GoogleTasks.NOTES + TEXT_TYPE + " )";
+			+ INTEGER_TYPE + COMMA_SEP + GoogleTasks.NOTES + TEXT_TYPE + " )";
 
 	private static final String SQL_DELETE_ENTRY_WUNDERUSER = "DROP TABLE IF EXISTS "
 			+ WunderUser.TABLE_NAME;

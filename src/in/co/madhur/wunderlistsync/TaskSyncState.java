@@ -1,5 +1,7 @@
 package in.co.madhur.wunderlistsync;
 
+import java.util.EnumSet;
+
 import android.content.Intent;
 
 public class TaskSyncState
@@ -9,28 +11,34 @@ public class TaskSyncState
 	private int syncedItems;
 	private String errorMessage;
 	private Intent authIntent;
-	
+
 	public TaskSyncState(WunderSyncState state)
 	{
 		this.setState(state);
 	}
-	
+
 	public TaskSyncState(String errorMessage)
 	{
-		this.state=WunderSyncState.ERROR;
-		this.errorMessage=errorMessage;
-		
+		this.state = WunderSyncState.ERROR;
+		this.errorMessage = errorMessage;
+
 	}
 
 	public TaskSyncState(WunderSyncState userRecoverableError, Intent intent)
 	{
 		this.setState(userRecoverableError);
-		this.authIntent=intent;
+		this.authIntent = intent;
 	}
 
 	public int getItemsToSync()
 	{
 		return itemsToSync;
+	}
+
+	public boolean isRunning()
+	{
+		return EnumSet.of(WunderSyncState.FETCH_GOOGLE_TASKS, WunderSyncState.FETCH_WUNDERLIST_TASKS, WunderSyncState.LOGIN, WunderSyncState.SYNCING).contains(state);
+
 	}
 
 	public void setItemsToSync(int itemsToSync)

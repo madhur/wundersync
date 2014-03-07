@@ -1,7 +1,12 @@
 package in.co.madhur.wunderlistsync.database;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 
 import com.google.api.services.tasks.model.Task;
 
@@ -12,6 +17,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatatypeMismatchException;
 import android.database.sqlite.SQLiteStatement;
+import android.text.TextUtils;
 import android.util.Log;
 
 import in.co.madhur.wunderlistsync.App;
@@ -51,19 +57,22 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT OR REPLACE INTO " + WunderTasks.TABLE_NAME +"("
-					+ WunderTasks._ID + "," + WunderTasks.LIST_ID + "," + WunderTasks.TITLE + ","+ WunderTasks.OWNER_ID+ "," + WunderTasks.CREATED_AT
-					+","+ WunderTasks.CREATED_BY_ID+"," + WunderTasks.UPDATED_AT+ ","+ WunderTasks.STARRED+ "," + WunderTasks.COMPLETED_AT + "," 
-					+ WunderTasks.COMPLETED_BY_ID + "," + WunderTasks.DELETED_AT+ "," + WunderTasks.ISSYNCED +"," + WunderTasks.GOOGLE_LIST_ID +") "
-					+ " VALUES (?,?,?,?,?,?,?,?,?,?,?, " + "(SELECT " + WunderTasks.ISSYNCED + " FROM "+ WunderTasks.TABLE_NAME + " WHERE " + WunderTasks._ID+"=?),"+
-					"(SELECT " + WunderTasks.GOOGLE_LIST_ID + " FROM " + WunderTasks.TABLE_NAME+ " WHERE " + WunderTasks._ID+ "=?)"+
-					");";
-			
-			
-			
-			
-			
-			
+			String sql = "INSERT OR REPLACE INTO " + WunderTasks.TABLE_NAME
+					+ "(" + WunderTasks._ID + "," + WunderTasks.LIST_ID + ","
+					+ WunderTasks.TITLE + "," + WunderTasks.OWNER_ID + ","
+					+ WunderTasks.CREATED_AT + "," + WunderTasks.CREATED_BY_ID
+					+ "," + WunderTasks.UPDATED_AT + "," + WunderTasks.STARRED
+					+ "," + WunderTasks.COMPLETED_AT + ","
+					+ WunderTasks.COMPLETED_BY_ID + ","
+					+ WunderTasks.DELETED_AT + "," + WunderTasks.ISSYNCED + ","
+					+ WunderTasks.GOOGLE_LIST_ID + ") "
+					+ " VALUES (?,?,?,?,?,?,?,?,?,?,?, " + "(SELECT "
+					+ WunderTasks.ISSYNCED + " FROM " + WunderTasks.TABLE_NAME
+					+ " WHERE " + WunderTasks._ID + "=?)," + "(SELECT "
+					+ WunderTasks.GOOGLE_LIST_ID + " FROM "
+					+ WunderTasks.TABLE_NAME + " WHERE " + WunderTasks._ID
+					+ "=?)" + ");";
+
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
 			for (int i = 0; i < tasks.size(); i++)
@@ -78,20 +87,20 @@ public class DbHelper
 
 				statement.bindString(4, tasks.get(i).getOwner_id());
 
-				statement.bindString(5, tasks.get(i).getCreated_at());
+				statement.bindLong(5, persistDate(tasks.get(i).getCreated_at()));
 
 				statement.bindString(6, tasks.get(i).getCreated_by_id());
 
-				statement.bindString(7, tasks.get(i).getUpdated_at());
+				statement.bindLong(7, persistDate(tasks.get(i).getUpdated_at()));
 
 				statement.bindString(8, tasks.get(i).getStarred().toString());
 
-				statement.bindString(9, tasks.get(i).getCompleted_at());
+				statement.bindLong(9, persistDate(tasks.get(i).getCompleted_at()));
 
 				statement.bindString(10, tasks.get(i).getCompleted_by_id().toString());
 
-				statement.bindString(11, tasks.get(i).getDeleted_at().toString());
-				
+				statement.bindLong(11, persistDate(tasks.get(i).getDeleted_at().toString()));
+
 				statement.bindString(12, tasks.get(i).getId());
 				statement.bindString(13, tasks.get(i).getId());
 
@@ -213,8 +222,8 @@ public class DbHelper
 
 		SQLiteDatabase database = db.getWritableDatabase();
 
-		Cursor c = database.query(AllWLists.OLD_TABLE_NAME, // The table to
-															// query
+		Cursor c = database.query(AllWLists.TABLE_NAME, // The table to
+														// query
 				null, // The columns to return
 				null, // The columns for the WHERE clause
 				null, // The values for the WHERE clause
@@ -232,10 +241,14 @@ public class DbHelper
 				listObj = new WList();
 				listObj.setId(c.getString(c.getColumnIndexOrThrow(AllWLists._ID)));
 				listObj.setTitle(c.getString(c.getColumnIndexOrThrow(AllWLists.TITLE)));
-				listObj.setOwner_id(c.getString(c.getColumnIndexOrThrow(AllWLists.OWNER_ID)));
-				listObj.setUpdated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.UPDATED_AT)));
-				listObj.setCreated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.CREATED_AT)));
+				// listObj.setOwner_id(c.getString(c.getColumnIndexOrThrow(AllWLists.OWNER_ID)));
+				// listObj.setUpdated_at(loadDate(c,
+				// c.getColumnIndexOrThrow(AllWLists.UPDATED_AT)));
+				// listObj.setUpdated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.UPDATED_AT)));
 
+				// listObj.setCreated_at(c.getString(c.getColumnIndexOrThrow(AllWLists.CREATED_AT)));
+				// listObj.setCreated_at(loadDate(c,
+				// c.getColumnIndexOrThrow(AllWLists.CREATED_AT)));
 				wList.add(listObj);
 
 			}
@@ -258,15 +271,18 @@ public class DbHelper
 			String sql = "INSERT OR REPLACE INTO " + tableName + "("
 					+ AllWLists._ID + "," + AllWLists.TITLE + ","
 					+ AllWLists.OWNER_ID + "," + AllWLists.CREATED_AT + ","
-					+ AllWLists.UPDATED_AT + "," + AllWLists.ISSYNCED + ","+ AllWLists.GOOGLE_LIST_ID+") "+
-					"VALUES (?,?,?,?,?, " + "(SELECT "+ AllWLists.ISSYNCED + " FROM " + AllWLists.TABLE_NAME + " WHERE " + AllWLists._ID +"=?)," +
-					"(SELECT "+ AllWLists.GOOGLE_LIST_ID + " FROM " + AllWLists.TABLE_NAME + " WHERE " + AllWLists._ID +"=?)"+
-					");";
-			
+					+ AllWLists.UPDATED_AT + "," + AllWLists.ISSYNCED + ","
+					+ AllWLists.GOOGLE_LIST_ID + ") " + "VALUES (?,?,?,?,?, "
+					+ "(SELECT " + AllWLists.ISSYNCED + " FROM "
+					+ AllWLists.TABLE_NAME + " WHERE " + AllWLists._ID + "=?),"
+					+ "(SELECT " + AllWLists.GOOGLE_LIST_ID + " FROM "
+					+ AllWLists.TABLE_NAME + " WHERE " + AllWLists._ID + "=?)"
+					+ ");";
+
 			Log.d(App.TAG, sql);
-		
+
 			SQLiteStatement statement = database.compileStatement(sql);
-			
+
 			database.beginTransaction();
 			for (int i = 0; i < lists.size(); i++)
 			{
@@ -278,12 +294,12 @@ public class DbHelper
 
 				statement.bindString(3, lists.get(i).getOwner_id());
 
-				statement.bindString(4, lists.get(i).getCreated_at());
+				statement.bindLong(4, persistDate(lists.get(i).getCreated_at()));
 
-				statement.bindString(5, lists.get(i).getUpdated_at());
-				
+				statement.bindLong(5, persistDate(lists.get(i).getUpdated_at()));
+
 				statement.bindString(6, lists.get(i).getId());
-				
+
 				statement.bindString(7, lists.get(i).getId());
 
 				statement.execute();
@@ -423,7 +439,7 @@ public class DbHelper
 		try
 		{
 
-			String sql = "INSERT INTO " + GoogleTasks.TABLE_NAME
+			String sql = "INSERT OR REPLACE INTO " + GoogleTasks.TABLE_NAME
 					+ " VALUES (?,?,?,?,?,?,?,?);";
 			SQLiteStatement statement = database.compileStatement(sql);
 			database.beginTransaction();
@@ -438,22 +454,23 @@ public class DbHelper
 				statement.bindString(3, tasks.get(i).getStatus());
 
 				if (tasks.get(i).getDue() != null)
-					statement.bindString(4, tasks.get(i).getDue().toString());
+					// statement.bindLong(index, value)
+					statement.bindLong(4, ISO8601.toDate(tasks.get(i).getDue().toString()));
 				else
 					statement.bindString(4, "");
 
 				if (tasks.get(i).getCompleted() != null)
-					statement.bindString(5, tasks.get(i).getCompleted().toString());
+					statement.bindLong(5, ISO8601.toDate(tasks.get(i).getCompleted().toString()));
 				else
 					statement.bindString(5, "");
 
 				if (tasks.get(i).getDeleted() != null)
-					statement.bindString(6, tasks.get(i).getDeleted().toString());
+					statement.bindLong(6, ISO8601.toDate(tasks.get(i).getDeleted().toString()));
 				else
 					statement.bindString(6, "");
 
 				if (tasks.get(i).getUpdated() != null)
-					statement.bindString(7, tasks.get(i).getUpdated().toString());
+					statement.bindLong(7, ISO8601.toDate(tasks.get(i).getUpdated().toString()));
 				else
 					statement.bindString(7, "");
 
@@ -571,7 +588,8 @@ public class DbHelper
 
 		try
 		{
-			database.update(WunderTasks.TABLE_NAME, values, WunderTasks._ID + "=?", new String[] { wTaskId });
+			database.update(WunderTasks.TABLE_NAME, values, WunderTasks._ID
+					+ "=?", new String[] { wTaskId });
 		}
 		catch (SQLException e)
 		{
@@ -582,6 +600,48 @@ public class DbHelper
 		{
 			database.close();
 		}
-		
+
+	}
+
+	public static Long persistDate(String dateStr) throws ParseException
+	{
+		if (TextUtils.isEmpty(dateStr))
+			return (long) 0;
+
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+
+		return format.parse(dateStr).getTime();
+
+		// Date.p
+		// if (date != null)
+		// {
+		// return date.getTime();
+		// }
+		// return null;
+	}
+
+	public static Date loadDate(Cursor cursor, int index)
+	{
+		if (cursor.isNull(index))
+		{
+			return null;
+		}
+		return new Date(cursor.getLong(index));
+	}
+
+	/**
+	 * Helper class for handling ISO 8601 strings of the following format:
+	 * "2008-03-01T13:00:00+01:00". It also supports parsing the "Z" timezone.
+	 */
+	public static final class ISO8601
+	{
+		/** Transform ISO 8601 string to Calendar. */
+		public static Long toDate(final String iso8601string)
+				throws ParseException
+		{
+			Log.v(App.TAG, "Parsing " +iso8601string);
+			Date date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(iso8601string);
+			return date.getTime();
+		}
 	}
 }

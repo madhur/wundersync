@@ -11,11 +11,13 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.tasks.TasksScopes;
+
 import in.co.madhur.wunderlistsync.AppPreferences.Keys;
 import in.co.madhur.wunderlistsync.api.AuthError;
 import in.co.madhur.wunderlistsync.api.AuthException;
 import in.co.madhur.wunderlistsync.api.WunderList;
 import in.co.madhur.wunderlistsync.api.model.WList;
+import in.co.madhur.wunderlistsync.calendar.CalendarAccessor;
 import in.co.madhur.wunderlistsync.database.DbHelper;
 import in.co.madhur.wunderlistsync.service.WunderSyncService;
 import android.os.AsyncTask;
@@ -103,7 +105,8 @@ public class MainActivity extends PreferenceActivity
 		// }
 		App.getEventBus().register(statusPrefence);
 		SetListeners();
-
+		initCalendars();
+		updateCallLogCalendarLabelFromPref();
 		UpdateLabel((ListPreference) findPreference(Keys.AUTO_SYNC_SCHEDULE.key), null);
 		UpdateConnected(findPreference(Keys.GOOGLE_CONNECTED.key), null);
 	}
@@ -141,6 +144,23 @@ public class MainActivity extends PreferenceActivity
 	protected void onDestroy()
 	{
 		super.onDestroy();
+	}
+
+	private void initCalendars()
+	{
+		final ListPreference calendarPref = (ListPreference) findPreference(Keys.CALENDAR_SYNC.key);
+		CalendarAccessor calendars = CalendarAccessor.Get.instance(getContentResolver());
+		boolean enabled = in.co.madhur.wunderlistsync.utils.ListPreferenceHelper.initListPreference(calendarPref, calendars.getCalendars(), false);
+
+		findPreference(Keys.ENABLE_CALENDAR_SYNC.key).setEnabled(enabled);
+	}
+
+	private void updateCallLogCalendarLabelFromPref()
+	{
+		final ListPreference calendarPref = (ListPreference) findPreference(Keys.CALENDAR_SYNC.key);
+
+		calendarPref.setTitle(calendarPref.getEntry() != null ? calendarPref.getEntry()
+				: getString(R.string.sync_calendar_label));
 	}
 
 	private void UpdateLabel(ListPreference listPreference, String newValue)
@@ -425,11 +445,8 @@ public class MainActivity extends PreferenceActivity
 					class WunderListsSyncTask extends
 							AsyncTask<ListSyncConfig, Void, WListResult>
 					{
-						ListSyncConfig config;
-
 						public WunderListsSyncTask(ListSyncConfig config)
 						{
-							this.config = config;
 						}
 
 						@Override
@@ -484,9 +501,6 @@ public class MainActivity extends PreferenceActivity
 									// Get list from REST API
 									lists = wunderList.GetLists();
 
-//									// purge the previous data
-//									dbHelper.TruncateListsOld();
-
 									// Write lists into the database
 									dbHelper.WriteLists(lists);
 
@@ -529,8 +543,8 @@ public class MainActivity extends PreferenceActivity
 										// Get list from REST API
 										lists = wunderList.GetLists();
 
-//										// purge the previous data
-//										dbHelper.TruncateListsOld();
+										// // purge the previous data
+										// dbHelper.TruncateListsOld();
 
 										// Write lists into the database
 										dbHelper.WriteLists(lists);
@@ -565,7 +579,7 @@ public class MainActivity extends PreferenceActivity
 								listView.setAdapter(adapter);
 								listView.setVisibility(ListView.VISIBLE);
 
-								String splitItems[] =appPreferences.getSelectedListsIds();
+								String splitItems[] = appPreferences.getSelectedListsIds();
 
 								for (int i = 0; i < adapter.getCount(); ++i)
 								{

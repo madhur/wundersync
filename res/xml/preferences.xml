@@ -27,6 +27,20 @@
         android:title="@string/ui_auto_backup_settings_label" android:summary="@string/additional_autosync_settings" >
         <Preference android:key="select_sync_list" android:title="@string/select_sync_list" android:summary="@string/select_sync_list_desc"></Preference>
         
+          <CheckBoxPreference
+                        android:key="enable_sync_calendar"
+                        android:title="@string/sync_calendar_enabled_label"
+                        android:persistent="true"
+                        android:defaultValue="false"
+                        android:summary="@string/sync_calendar_enabled_desc"/>
+
+                <ListPreference
+                        android:key="sync_calendar"
+                        android:dependency="enable_sync_calendar"
+                        android:persistent="true"
+                        android:defaultValue="-1"
+                        android:summary="@string/sync_calendar_desc"/>
+        
         <ListPreference
             android:defaultValue="7200"
             android:entries="@array/auto_backup_schedule_entries"

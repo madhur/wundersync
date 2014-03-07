@@ -29,7 +29,10 @@ public class AppPreferences
 		WUNDER_PASSWORD("wunder_password"),
 		TOKEN("wunder_token"),
 		WUNDER_CREDENTIALS("wunder_credentials"),
-		SELECT_SYNC_LISTS("select_sync_list");
+		SELECT_SYNC_LISTS("select_sync_list"),
+		ENABLE_CALENDAR_SYNC("enable_sync_calendar"),
+		CALENDAR_SYNC("sync_calendar");
+		
 		
 		
 		public final String key;
