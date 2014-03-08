@@ -319,7 +319,7 @@ public class MainActivity extends PreferenceActivity
 					credential.setSelectedAccountName("");
 					appPreferences.SetUserName("");
 					preference.setSummary(getString(R.string.not_connected));
-					appPreferences.SetMetadata(Keys.LAST_SYNC_DATE, "");
+					//appPreferences.SetMetadata(Keys.LAST_SYNC_DATE, "");
 					UpdateConnected(preference, (Boolean) newValue);
 				}
 

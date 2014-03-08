@@ -1,6 +1,7 @@
 package in.co.madhur.wunderlistsync;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Date;
 
 import android.R.string;
 import android.content.Context;
@@ -15,8 +16,8 @@ public class AppPreferences
 {
 	private Context context;
 	public SharedPreferences sharedPreferences;
-	String defValue="";
-	
+	String defValue = "";
+
 	public enum Keys
 	{
 		GOOGLE_CONNECTED("connected"),
@@ -32,9 +33,7 @@ public class AppPreferences
 		SELECT_SYNC_LISTS("select_sync_list"),
 		ENABLE_CALENDAR_SYNC("enable_sync_calendar"),
 		CALENDAR_SYNC("sync_calendar");
-		
-		
-		
+
 		public final String key;
 
 		private Keys(String key)
@@ -43,85 +42,106 @@ public class AppPreferences
 
 		}
 
-		
-		
 	};
-	
+
 	public AppPreferences(Context context)
 	{
-		this.context=context;
-		this.sharedPreferences=PreferenceManager.getDefaultSharedPreferences(context);
+		this.context = context;
+		this.sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 	}
-	
-	
+
 	public String GetMetadata(Keys key)
 	{
-		
-		return sharedPreferences.getString(key.key,defValue);
-		
+
+		return sharedPreferences.getString(key.key, defValue);
+
 	}
-	
+
+	public void SetNowDate()
+	{
+		Editor edit = sharedPreferences.edit();
+		edit.putLong(Keys.LAST_SYNC_DATE.key, new Date().getTime());
+		edit.commit();
+	}
+
+	public long GetLastSyncDate()
+	{
+		try
+		{
+			return sharedPreferences.getLong(Keys.LAST_SYNC_DATE.key, 0);
+		}
+		catch (ClassCastException e)
+		{
+			return 0;
+		}
+
+	}
+
 	public void SetMetadata(Keys key, String value)
 	{
-		Editor edit=sharedPreferences.edit();
+		Editor edit = sharedPreferences.edit();
 		edit.putString(key.key, value);
+
 		edit.commit();
-		
+
 	}
-	
+
 	public String GetUserName()
 	{
 		return sharedPreferences.getString(Keys.USER_NAME_GOOGLE.key, "");
-		
+
 	}
-	
+
 	public void SetUserName(String username)
 	{
-		Editor edit=sharedPreferences.edit();
+		Editor edit = sharedPreferences.edit();
 		edit.putString(Keys.USER_NAME_GOOGLE.key, username);
 		edit.commit();
-		
+
 	}
-	
+
 	public void SetWunderUserName(String username)
 	{
-		Editor edit=sharedPreferences.edit();
+		Editor edit = sharedPreferences.edit();
 		edit.putString(Keys.WUNDER_USERNAME.key, username);
 		edit.commit();
-		
+
 	}
 	
+	public int GetTaskCalendar()
+	{
+		return getStringAsInt(Keys.CALENDAR_SYNC.key, -1);
+		
+	}
+
 	public String GetWunderUserName()
 	{
 		return sharedPreferences.getString(Keys.WUNDER_USERNAME.key, defValue);
 	}
-	
+
 	public boolean isGoogleConnected()
 	{
 		return sharedPreferences.getBoolean(Keys.GOOGLE_CONNECTED.key, false);
-		
+
 	}
-	
-	
-	
+
 	public String[] getSelectedListsIds()
 	{
-		String lists=GetMetadata(Keys.SELECT_SYNC_LISTS);
-		
+		String lists = GetMetadata(Keys.SELECT_SYNC_LISTS);
+
 		return lists.split(";");
-		
+
 	}
-	
+
 	public String GetWunderPassword()
 	{
-		
-		String encPassword=GetMetadata(Keys.WUNDER_PASSWORD);
-		if(TextUtils.isEmpty(encPassword))
+
+		String encPassword = GetMetadata(Keys.WUNDER_PASSWORD);
+		if (TextUtils.isEmpty(encPassword))
 			return defValue;
-		
-		String password = null; 
-		
-		
+
+		String password = null;
+
 		try
 		{
 			byte[] data = Base64.decode(encPassword, Base64.DEFAULT);
@@ -131,15 +151,15 @@ public class AppPreferences
 		{
 			Log.e(App.TAG, e1.getMessage());
 		}
-		catch(IllegalArgumentException e1)
+		catch (IllegalArgumentException e1)
 		{
 			Log.e(App.TAG, e1.getMessage());
 		}
-		
+
 		return password;
-		
+
 	}
-	
+
 	public void SetWunderPassword(String password)
 	{
 		byte[] data = null;
@@ -153,36 +173,52 @@ public class AppPreferences
 		{
 			Log.e(App.TAG, e.getMessage());
 		}
-		
-		Editor edit=sharedPreferences.edit();
+
+		Editor edit = sharedPreferences.edit();
 		edit.putString(Keys.WUNDER_PASSWORD.key, base64);
 		edit.commit();
-		
+
 	}
-	
+
 	public boolean isEmptyCred()
 	{
-		String userName=GetMetadata(Keys.WUNDER_USERNAME);
-		String password=GetMetadata(Keys.WUNDER_PASSWORD);
-		
-		if(userName.trim().length()==0 || password.trim().length()==0)
+		String userName = GetMetadata(Keys.WUNDER_USERNAME);
+		String password = GetMetadata(Keys.WUNDER_PASSWORD);
+
+		if (userName.trim().length() == 0 || password.trim().length() == 0)
 			return true;
-		
+
 		return false;
-		
+
 	}
-	
+
+	private int getStringAsInt(String key, int def)
+	{
+		try
+		{
+			String s = sharedPreferences.getString(key, null);
+			if (s == null)
+				return def;
+
+			return Integer.valueOf(s);
+		}
+		catch (NumberFormatException e)
+		{
+			return def;
+		}
+	}
+
 	public boolean isOnlyWifi()
 	{
-		
+
 		return sharedPreferences.getBoolean(Keys.ENABLE_WIFI_ONLY.key, false);
 	}
-	
+
 	public boolean isAutoSync()
 	{
-		
+
 		return sharedPreferences.getBoolean(Keys.ENABLE_AUTO_SYNC.key, false);
-		
+
 	}
 
 }

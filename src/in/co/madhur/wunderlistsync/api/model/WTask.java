@@ -124,6 +124,8 @@ public class WTask
 
 	public Object getDue_date()
 	{
+		if(due_date==null || TextUtils.isEmpty((CharSequence) due_date))
+			return "";
 		return due_date;
 	}
 

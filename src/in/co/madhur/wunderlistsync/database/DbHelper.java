@@ -4,9 +4,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import com.google.api.services.tasks.model.Task;
 
@@ -15,13 +15,11 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatatypeMismatchException;
 import android.database.sqlite.SQLiteStatement;
 import android.text.TextUtils;
 import android.util.Log;
 
 import in.co.madhur.wunderlistsync.App;
-import in.co.madhur.wunderlistsync.TaskSyncState;
 import in.co.madhur.wunderlistsync.api.model.WList;
 import in.co.madhur.wunderlistsync.api.model.WTask;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.AllWLists;
@@ -29,6 +27,8 @@ import in.co.madhur.wunderlistsync.database.WunderSyncContract.GoogleTasks;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.GoogleUser;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderTasks;
 import in.co.madhur.wunderlistsync.database.WunderSyncContract.WunderUser;
+import in.co.madhur.wunderlistsync.utils.DateHelper;
+import in.co.madhur.wunderlistsync.utils.DateHelper.ISO8601;
 
 public class DbHelper
 {
@@ -87,19 +87,19 @@ public class DbHelper
 
 				statement.bindString(4, tasks.get(i).getOwner_id());
 
-				statement.bindLong(5, persistDate(tasks.get(i).getCreated_at()));
+				statement.bindLong(5, DateHelper.persistDate(tasks.get(i).getCreated_at()));
 
 				statement.bindString(6, tasks.get(i).getCreated_by_id());
 
-				statement.bindLong(7, persistDate(tasks.get(i).getUpdated_at()));
+				statement.bindLong(7, DateHelper.persistDate(tasks.get(i).getUpdated_at()));
 
 				statement.bindString(8, tasks.get(i).getStarred().toString());
 
-				statement.bindLong(9, persistDate(tasks.get(i).getCompleted_at()));
+				statement.bindLong(9, DateHelper.persistDate(tasks.get(i).getCompleted_at()));
 
 				statement.bindString(10, tasks.get(i).getCompleted_by_id().toString());
 
-				statement.bindLong(11, persistDate(tasks.get(i).getDeleted_at().toString()));
+				statement.bindLong(11, DateHelper.persistDate(tasks.get(i).getDeleted_at().toString()));
 
 				statement.bindString(12, tasks.get(i).getId());
 				statement.bindString(13, tasks.get(i).getId());
@@ -294,9 +294,9 @@ public class DbHelper
 
 				statement.bindString(3, lists.get(i).getOwner_id());
 
-				statement.bindLong(4, persistDate(lists.get(i).getCreated_at()));
+				statement.bindLong(4, DateHelper.persistDate(lists.get(i).getCreated_at()));
 
-				statement.bindLong(5, persistDate(lists.get(i).getUpdated_at()));
+				statement.bindLong(5, DateHelper.persistDate(lists.get(i).getUpdated_at()));
 
 				statement.bindString(6, lists.get(i).getId());
 
@@ -603,45 +603,5 @@ public class DbHelper
 
 	}
 
-	public static Long persistDate(String dateStr) throws ParseException
-	{
-		if (TextUtils.isEmpty(dateStr))
-			return (long) 0;
-
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
-
-		return format.parse(dateStr).getTime();
-
-		// Date.p
-		// if (date != null)
-		// {
-		// return date.getTime();
-		// }
-		// return null;
-	}
-
-	public static Date loadDate(Cursor cursor, int index)
-	{
-		if (cursor.isNull(index))
-		{
-			return null;
-		}
-		return new Date(cursor.getLong(index));
-	}
-
-	/**
-	 * Helper class for handling ISO 8601 strings of the following format:
-	 * "2008-03-01T13:00:00+01:00". It also supports parsing the "Z" timezone.
-	 */
-	public static final class ISO8601
-	{
-		/** Transform ISO 8601 string to Calendar. */
-		public static Long toDate(final String iso8601string)
-				throws ParseException
-		{
-			Log.v(App.TAG, "Parsing " +iso8601string);
-			Date date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(iso8601string);
-			return date.getTime();
-		}
-	}
+	
 }

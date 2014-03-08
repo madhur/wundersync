@@ -2,6 +2,7 @@ package in.co.madhur.wunderlistsync.service;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
@@ -10,6 +11,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIO
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.DateTime;
 import com.google.api.services.tasks.TasksScopes;
 import com.google.api.services.tasks.model.Task;
 
@@ -85,6 +87,8 @@ public class WunderSyncService extends Service
 		final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
 		private GoogleAccountCredential credential;
 		TaskSyncConfig config;
+		boolean isCalendarSync;
+		Long calendarId;
 
 		public WunderSyncTask(TaskSyncConfig config)
 		{
@@ -196,17 +200,18 @@ public class WunderSyncService extends Service
 				
 				taskHelper.CreateOrEnsureTasks(tasks, config.getSelectedListIds());
 				
-				taskHelper.DeleteEmptyLists();
+			//	taskHelper.DeleteEmptyLists();
 
 				//Log.d(App.TAG, "Writing google tasks to db");
-				List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
-				dbHelper.writeGoogleTasks(gTasks);
+				//List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
+				//dbHelper.writeGoogleTasks(gTasks);
 
 //				Log.d(App.TAG, "moving data to old");
 //				dbHelper.MoveData();
 
 //				Log.d(App.TAG, "Truncating tables");
 //				dbHelper.TruncateTables();
+			//	preferences.SetNowDate();
 
 			}
 			catch(UserRecoverableAuthIOException e)
@@ -226,6 +231,7 @@ public class WunderSyncService extends Service
 				if (e.getMessage() != null)
 				{
 					Log.e(App.TAG, e.getMessage());
+					e.printStackTrace();
 					return new TaskSyncState(e.getMessage());
 				}
 				

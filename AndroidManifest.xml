@@ -37,6 +37,14 @@
             </intent-filter>
         </activity>
         <service android:name=".service.WunderSyncService" android:exported="false" ></service>
+        
+          <receiver android:name=".recievers.SyncSchedulerReceiver" android:enabled="true">
+          <intent-filter>
+            <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            <action android:name="android.intent.action.BOOT_COMPLETED"/>
+          </intent-filter>
+        </receiver>
+        
     </application>
 
 </manifest>
