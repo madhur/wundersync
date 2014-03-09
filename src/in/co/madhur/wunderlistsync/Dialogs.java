@@ -5,5 +5,5 @@ package in.co.madhur.wunderlistsync;
 	    MISSING_GOOGLE_CONNECT,
 	    ABOUT,
 	    RESET,
-	    START_SYNC
+	    START_SYNC, VIEW_LOG
 	}

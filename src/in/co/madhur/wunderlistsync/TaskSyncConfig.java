@@ -1,9 +1,6 @@
 package in.co.madhur.wunderlistsync;
 
-import in.co.madhur.wunderlistsync.api.model.WList;
-
 import java.util.Date;
-import java.util.List;
 
 public class TaskSyncConfig
 {

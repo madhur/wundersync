@@ -1,57 +1,56 @@
 package in.co.madhur.wunderlistsync.service;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAuthIOException;
-import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.DateTime;
-import com.google.api.services.tasks.TasksScopes;
-import com.google.api.services.tasks.model.Task;
-
 import in.co.madhur.wunderlistsync.App;
 import in.co.madhur.wunderlistsync.AppPreferences;
-import in.co.madhur.wunderlistsync.Consts;
+import in.co.madhur.wunderlistsync.MainActivity;
+import in.co.madhur.wunderlistsync.R;
 import in.co.madhur.wunderlistsync.TaskSyncConfig;
-import in.co.madhur.wunderlistsync.TaskSyncState;
-import in.co.madhur.wunderlistsync.WunderSyncState;
 import in.co.madhur.wunderlistsync.AppPreferences.Keys;
-import in.co.madhur.wunderlistsync.api.APIConsts;
-import in.co.madhur.wunderlistsync.api.AuthError;
-import in.co.madhur.wunderlistsync.api.AuthException;
-import in.co.madhur.wunderlistsync.api.WunderAPI;
-import in.co.madhur.wunderlistsync.api.WunderList;
-import in.co.madhur.wunderlistsync.api.model.LoginResponse;
-import in.co.madhur.wunderlistsync.api.model.Me;
-import in.co.madhur.wunderlistsync.api.model.WList;
-import in.co.madhur.wunderlistsync.api.model.WTask;
-import in.co.madhur.wunderlistsync.database.DbHelper;
-import in.co.madhur.wunderlistsync.gtasks.GTaskHelper;
-import retrofit.RestAdapter;
+import in.co.madhur.wunderlistsync.utils.AppLog;
+import android.annotation.TargetApi;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
-import android.database.sqlite.SQLiteException;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.IBinder;
-import android.provider.CalendarContract.SyncState;
-import android.test.RenamingDelegatingContext;
-import android.text.TextUtils;
+import android.os.PowerManager;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 public class WunderSyncService extends Service
 {
-	AppPreferences preferences;
+	private AppPreferences preferences;
+	private static WunderSyncTask syncTask;
+	private PowerManager.WakeLock mWakeLock;
+	private WifiManager.WifiLock mWifiLock;
+
+	private AppLog appLog;
 
 	@Override
 	public IBinder onBind(Intent intent)
 	{
 		return null;
+	}
+
+	@Override
+	public void onCreate()
+	{
+		super.onCreate();
+		this.appLog = new AppLog(DateFormat.getDateFormatOrder(this));
+	}
+
+	@Override
+	public void onDestroy()
+	{
+		super.onDestroy();
+		if (appLog != null)
+			appLog.close();
 	}
 
 	@Override
@@ -75,188 +74,108 @@ public class WunderSyncService extends Service
 		config.setGoogleAccount(preferences.GetUserName());
 		config.setSelectedListIds(preferences.getSelectedListsIds());
 		Log.v(App.TAG, "Executing task");
-		new WunderSyncTask(config).execute(config);
+		syncTask = new WunderSyncTask(config, this);
+		syncTask.execute(config);
 
 	}
 
-	private class WunderSyncTask extends
-			AsyncTask<TaskSyncConfig, TaskSyncState, TaskSyncState>
+	protected void acquireLocks()
 	{
-		com.google.api.services.tasks.Tasks taskService;
-		final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
-		final com.google.api.client.json.JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-		private GoogleAccountCredential credential;
-		TaskSyncConfig config;
-		boolean isCalendarSync;
-		Long calendarId;
-
-		public WunderSyncTask(TaskSyncConfig config)
+		if (mWakeLock == null)
 		{
-			this.config = config;
+			PowerManager pMgr = (PowerManager) getSystemService(POWER_SERVICE);
+			mWakeLock = pMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, App.TAG);
 		}
+		mWakeLock.acquire();
 
-		@Override
-		protected void onPreExecute()
+		if (isConnectedViaWifi())
 		{
-			super.onPreExecute();
-
-			credential = GoogleAccountCredential.usingOAuth2(getBaseContext(), Collections.singleton(TasksScopes.TASKS));
-			credential.setSelectedAccountName(config.getGoogleAccount());
-			taskService = new com.google.api.services.tasks.Tasks.Builder(httpTransport, jsonFactory, credential).setApplicationName("WunderSync").build();
-
+			// we have Wifi, lock it
+			WifiManager wMgr = getWifiManager();
+			if (mWifiLock == null)
+			{
+				mWifiLock = wMgr.createWifiLock(getWifiLockType(), App.TAG);
+			}
+			mWifiLock.acquire();
 		}
+	}
 
-		@Override
-		protected void onProgressUpdate(TaskSyncState... values)
+	protected void releaseLocks()
+	{
+		if (mWakeLock != null && mWakeLock.isHeld())
 		{
-			super.onProgressUpdate(values);
-
-			App.getEventBus().post(values[0]);
-
+			mWakeLock.release();
+			mWakeLock = null;
 		}
-
-		@Override
-		protected TaskSyncState doInBackground(TaskSyncConfig... params)
+		if (mWifiLock != null && mWifiLock.isHeld())
 		{
-			TaskSyncConfig config = params[0];
-			LoginResponse loginResponse;
-			WunderList wunderList = null;
-			DbHelper dbHelper = null;
-			GTaskHelper taskHelper=null;
-
-			try
-			{
-				publishProgress(new TaskSyncState(WunderSyncState.LOGIN));
-
-				if (!TextUtils.isEmpty(params[0].getToken()))
-				{
-
-					try
-					{
-						wunderList = WunderList.getInstance(params[0].getToken());
-					}
-					catch (AuthException e)
-					{
-						Log.v(App.TAG, "Old token expired, getting new token...");
-						if (e.getErrorCode() == AuthError.OLD_TOKEN_EXPIRED)
-						{
-							wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
-							preferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
-							Log.v(App.TAG, "New token: "
-									+ wunderList.GetToken());
-						}
-						else if(e.getErrorCode()== AuthError.USER_NOT_FOUND)
-						{
-							throw new AuthException(APIConsts.USER_NOT_FOUND);
-						}
-
-					}
-				}
-				else
-				{
-					wunderList = WunderList.getInstance(config.getUsername(), config.getPassword());
-					preferences.SetMetadata(Keys.TOKEN, wunderList.GetToken());
-					
-				}
-			
-
-				publishProgress(new TaskSyncState(WunderSyncState.FETCH_WUNDERLIST_TASKS));
-				
-				Me userInfo=wunderList.GetUserInfo();
-				
-				List<WList> lists=wunderList.GetLists();
-				
-				List<WTask> tasks = wunderList.GetTasks();
-
-				dbHelper = DbHelper.getInstance(WunderSyncService.this);
-				
-				dbHelper.EnsureUsers(config.getGoogleAccount(), config.getUsername(), userInfo.getId());
-				
-				// Try dropping the tables if previosuly exists. This can happen
-				// if previous sync was incorrectly aborted
-//				try
-//				{
-//					Log.d(App.TAG, "Truncating previous tables");
-//					dbHelper.TruncateTables();
-//				}
-//				catch (SQLiteException e)
-//				{
-//					// Silently catch and continue, since this is not an error
-//					Log.d(App.TAG, e.getMessage());
-//				}
-				
-				Log.d(App.TAG, "Writing wunderlists to db");
-				dbHelper.WriteLists(lists);
-
-				Log.d(App.TAG, "Writing wunder tasks to db");
-				dbHelper.WriteWunderTasks(tasks);
-
-				publishProgress(new TaskSyncState(WunderSyncState.FETCH_GOOGLE_TASKS));
-				taskHelper=GTaskHelper.GetInstance(taskService, WunderSyncService.this);
-				
-				publishProgress(new TaskSyncState(WunderSyncState.SYNCING));
-			
-				taskHelper.CreateOrEnsureLists(lists, config.getSelectedListIds());
-				
-				taskHelper.CreateOrEnsureTasks(tasks, config.getSelectedListIds());
-				
-			//	taskHelper.DeleteEmptyLists();
-
-				//Log.d(App.TAG, "Writing google tasks to db");
-				//List<Task> gTasks = taskService.tasks().list("@default").execute().getItems();
-				//dbHelper.writeGoogleTasks(gTasks);
-
-//				Log.d(App.TAG, "moving data to old");
-//				dbHelper.MoveData();
-
-//				Log.d(App.TAG, "Truncating tables");
-//				dbHelper.TruncateTables();
-			//	preferences.SetNowDate();
-
-			}
-			catch(UserRecoverableAuthIOException e)
-			{
-				Log.e(App.TAG, "UserRecoverableAuthIOException");
-				return new TaskSyncState(WunderSyncState.USER_RECOVERABLE_ERROR, e.getIntent());
-				
-			}
-			catch(GoogleAuthIOException e)
-			{
-				
-				Log.e(App.TAG, "GoogleAuthIOException");
-				return new TaskSyncState("GoogleAuthIOException");
-			}
-			catch (Exception e)
-			{
-				if (e.getMessage() != null)
-				{
-					Log.e(App.TAG, e.getMessage());
-					e.printStackTrace();
-					return new TaskSyncState(e.getMessage());
-				}
-				
-				return new TaskSyncState("An error occured, please check logs");
-				
-
-			}
-			finally
-			{
-
-			}
-			return new TaskSyncState(WunderSyncState.FINISHED);
-
+			mWifiLock.release();
+			mWifiLock = null;
 		}
+	}
 
-		@Override
-		protected void onPostExecute(TaskSyncState result)
+	private void appLog(int id, Object... args)
+	{
+		final String msg = getString(id, args);
+		if (appLog != null)
 		{
-			super.onPostExecute(result);
-			App.getEventBus().post(result);
-
-			WunderSyncService.this.stopSelf();
-
+			appLog.append(msg);
 		}
+		else if (App.LOCAL_LOGV)
+		{
+			Log.d(App.TAG, "AppLog: " + msg);
+		}
+	}
 
+	private NotificationManager getNotifier()
+	{
+		return (NotificationManager) getApplicationContext().getSystemService(NOTIFICATION_SERVICE);
+	}
+
+	private ConnectivityManager getConnectivityManager()
+	{
+		return (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+	}
+
+	private WifiManager getWifiManager()
+	{
+		return (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+	}
+
+	private Notification createNotification(int resId)
+	{
+		Notification n = new Notification(R.drawable.ic_notification, getString(resId), System.currentTimeMillis());
+		n.flags = Notification.FLAG_ONGOING_EVENT;
+		return n;
+	}
+
+	private PendingIntent getPendingIntent()
+	{
+		return PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+	}
+
+	private boolean isConnectedViaWifi()
+	{
+		WifiManager wifiManager = getWifiManager();
+		return (wifiManager != null
+				&& wifiManager.isWifiEnabled()
+				&& getConnectivityManager().getNetworkInfo(ConnectivityManager.TYPE_WIFI) != null && getConnectivityManager().getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected());
+	}
+
+	public static boolean IsSyncTaskRunning()
+	{
+		if (syncTask != null
+				&& syncTask.getStatus() == AsyncTask.Status.RUNNING)
+			return true;
+		return false;
+
+	}
+
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
+	private int getWifiLockType()
+	{
+		return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1 ? WifiManager.WIFI_MODE_FULL_HIGH_PERF
+				: WifiManager.WIFI_MODE_FULL;
 	}
 
 }

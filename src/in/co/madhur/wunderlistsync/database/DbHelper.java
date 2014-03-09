@@ -1,13 +1,7 @@
 package in.co.madhur.wunderlistsync.database;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import com.google.api.services.tasks.model.Task;
 
 import android.content.ContentValues;
@@ -16,7 +10,6 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
-import android.text.TextUtils;
 import android.util.Log;
 
 import in.co.madhur.wunderlistsync.App;

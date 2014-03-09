@@ -6,67 +6,59 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import in.co.madhur.wunderlistsync.AppPreferences;
+import in.co.madhur.wunderlistsync.Consts.SyncType;
+
+import static in.co.madhur.wunderlistsync.App.*;
+
 import java.util.UUID;
 
 public class Alarms
 {
-	private static final int BOOT_BACKUP_DELAY = 60;
-
-	private final Preferences mPreferences;
+	private final AppPreferences mPreferences;
 	private Context mContext;
 
 	public Alarms(Context context)
 	{
-		this(context.getApplicationContext(), new Preferences(context));
+		this(context.getApplicationContext(), new AppPreferences(context));
 	}
 
-	Alarms(Context context, Preferences preferences)
+	Alarms(Context context, AppPreferences preferences)
 	{
 		mContext = context.getApplicationContext();
 		mPreferences = preferences;
 	}
 
-	public long scheduleIncomingBackup()
-	{
-		return scheduleBackup(mPreferences.getIncomingTimeoutSecs(), INCOMING, false);
-	}
+	
 
 	public long scheduleRegularBackup()
 	{
-		return scheduleBackup(mPreferences.getRegularTimeoutSecs(), REGULAR, false);
+		return scheduleBackup(mPreferences.getSchedule(), SyncType.REGULAR);
 	}
 
 	public long scheduleBootupBackup()
 	{
-		return scheduleBackup(BOOT_BACKUP_DELAY, REGULAR, false);
-	}
-
-	public long scheduleImmediateBackup()
-	{
-		return scheduleBackup(-1, BROADCAST_INTENT, true);
+		return scheduleBackup(mPreferences.getSchedule(),  SyncType.REGULAR);
 	}
 
 	public void cancel()
 	{
-		getAlarmManager(mContext).cancel(createPendingIntent(mContext, UNKNOWN));
+		getAlarmManager(mContext).cancel(createPendingIntent(mContext, SyncType.UNKNOWN));
 	}
 
-	private long scheduleBackup(int inSeconds, BackupType backupType, boolean force)
+	private long scheduleBackup(int inSeconds, SyncType syncType)
 	{
-		if (LOCAL_LOGV)
-		{
-			Log.v(TAG, "scheduleBackup(" + mContext + ", " + inSeconds + ", "
-					+ backupType + ", " + force + ")");
-		}
+		
 
-		if (force || (mPreferences.isEnableAutoSync() && inSeconds > 0))
+		if (mPreferences.isAutoSync() && inSeconds > 0)
 		{
 			final long atTime = System.currentTimeMillis()
 					+ (inSeconds * 1000l);
-			getAlarmManager(mContext).set(AlarmManager.RTC_WAKEUP, atTime, createPendingIntent(mContext, backupType));
+			// getAlarmManager(mContext).set(AlarmManager.RTC_WAKEUP, atTime, createPendingIntent(mContext, syncType));
+			getAlarmManager(mContext).setInexactRepeating(AlarmManager.RTC_WAKEUP, atTime, inSeconds*1000, createPendingIntent(mContext, syncType));
 			if (LOCAL_LOGV)
 			{
-				Log.v(TAG, "Scheduled backup due "
+				Log.v(TAG, "Scheduled sync due "
 						+ (inSeconds > 0 ? "in " + inSeconds + " seconds"
 								: "now"));
 			}
@@ -75,7 +67,7 @@ public class Alarms
 		else
 		{
 			if (LOCAL_LOGV)
-				Log.v(TAG, "Not scheduling backup because auto sync is disabled.");
+				Log.v(TAG, "Not scheduling sync because auto sync is disabled.");
 			return -1;
 		}
 	}
@@ -85,13 +77,12 @@ public class Alarms
 		return (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
 	}
 
-	private static PendingIntent createPendingIntent(Context ctx, BackupType backupType)
+	private static PendingIntent createPendingIntent(Context ctx, SyncType backupType)
 	{
 		final UUID uuid = UUID.randomUUID();
 
-		final Intent intent = (new Intent(ctx, SmsBackupService.class)).setAction(backupType.name()
-				+ "-" + uuid.toString()) // create fresh pending intent
-		.putExtra(BackupType.EXTRA, backupType.name());
+		final Intent intent = (new Intent(ctx, WunderSyncService.class)).setAction(backupType.name()
+				+ "-" + uuid.toString());
 
 		return PendingIntent.getService(ctx, 0, intent, 0);
 	}

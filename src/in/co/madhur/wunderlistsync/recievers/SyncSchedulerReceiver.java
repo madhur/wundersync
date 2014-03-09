@@ -1,9 +1,13 @@
 package in.co.madhur.wunderlistsync.recievers;
 
 import in.co.madhur.wunderlistsync.App;
+import in.co.madhur.wunderlistsync.AppPreferences;
+import in.co.madhur.wunderlistsync.service.Alarms;
+import in.co.madhur.wunderlistsync.utils.AppLog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 public class SyncSchedulerReceiver extends BroadcastReceiver
@@ -30,31 +34,31 @@ public class SyncSchedulerReceiver extends BroadcastReceiver
 		}
 		else
 		{
-			Log.i(TAG, "Received bootup but not set up to back up.");
+			Log.i(App.TAG, "Received bootup but not set up to back up.");
 		}
 	}
 
 	private boolean shouldSchedule(Context context)
 	{
-		final Preferences preferences = getPreferences(context);
+		final AppPreferences preferences = new AppPreferences(context);
 
-		final boolean autoSync = preferences.isEnableAutoSync();
-		final boolean loginInformationSet = getAuthPreferences(context).isLoginInformationSet();
-		final boolean firstBackup = preferences.isFirstBackup();
-		final boolean schedule = (autoSync && loginInformationSet && !firstBackup);
+		final boolean autoSync = preferences.isAutoSync();
+		final boolean loginInformationSet = preferences.isLoginInformationSet();
+		final boolean firstSync = preferences.isFirstSync();
+		final boolean schedule = (autoSync && loginInformationSet && !firstSync);
 
 		if (!schedule)
 		{
-			final String message = new StringBuilder().append("Not set up to back up. ").append("autoSync=").append(autoSync).append(", loginInfoSet=").append(loginInformationSet).append(", firstBackup=").append(firstBackup).toString();
+			final String message = new StringBuilder().append("Not set up to back up. ").append("autoSync=").append(autoSync).append(", loginInfoSet=").append(loginInformationSet).append(", firstBackup=").append(firstSync).toString();
 
-			log(context, message, preferences.isAppLogDebug());
+			log(context, message, true);
 		}
 		return schedule;
 	}
 
 	private void log(Context context, String message, boolean appLog)
 	{
-		Log.d(TAG, message);
+		Log.d(App.TAG, message);
 		if (appLog)
 		{
 			new AppLog(DateFormat.getDateFormatOrder(context)).appendAndClose(message);
@@ -66,14 +70,6 @@ public class SyncSchedulerReceiver extends BroadcastReceiver
 		return new Alarms(context);
 	}
 
-	protected Preferences getPreferences(Context context)
-	{
-		return new Preferences(context);
-	}
-
-	protected AuthPreferences getAuthPreferences(Context context)
-	{
-		return new AuthPreferences(context);
-	}
+	
 
 }

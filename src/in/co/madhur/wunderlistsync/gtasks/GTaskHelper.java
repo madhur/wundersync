@@ -5,28 +5,23 @@ import in.co.madhur.wunderlistsync.AppPreferences;
 import in.co.madhur.wunderlistsync.api.model.WList;
 import in.co.madhur.wunderlistsync.api.model.WTask;
 import in.co.madhur.wunderlistsync.database.DbHelper;
+import in.co.madhur.wunderlistsync.utils.AppLog;
 import in.co.madhur.wunderlistsync.utils.DateHelper;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;
-
-import junit.framework.Assert;
 
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.util.DateTime;
 import com.google.api.services.tasks.model.Task;
 import com.google.api.services.tasks.model.TaskList;
-import com.google.api.services.tasks.model.TaskLists;
 
 public class GTaskHelper
 {
@@ -94,12 +89,13 @@ public class GTaskHelper
 							+ taskLists2.get(i).getTitle());
 					try
 					{
-					client.tasklists().delete(taskLists2.get(i).getId()).execute();
+						client.tasklists().delete(taskLists2.get(i).getId()).execute();
 					}
-					catch(GoogleJsonResponseException e)
+					catch (GoogleJsonResponseException e)
 					{
-						
-						Log.e(App.TAG, "Error deleting " + taskLists2.get(i).getTitle());
+
+						Log.e(App.TAG, "Error deleting "
+								+ taskLists2.get(i).getTitle());
 					}
 				}
 				else
@@ -138,21 +134,68 @@ public class GTaskHelper
 
 			Log.d(App.TAG, "Creating google list: " + wList.getTitle());
 
-			TaskList taskList;
-			taskList = new TaskList();
-			taskList.setTitle(wList.getTitle());
-			TaskList newtaskList = client.tasklists().insert(taskList).execute();
+			TaskList taskList = GetTaskList(wList.getTitle());
+			
+			try
+			{
+				TaskList newtaskList = client.tasklists().insert(taskList).execute();
+				// Update db to reflect the corresponding google id and set the
+				// synced field
+				
+				dbHelper.setGoogleListofWlist(wList.getId(), newtaskList.getId());
+			}
+			catch (GoogleJsonResponseException e)
+			{
+				handleGoogleJSONError(e);
 
-			// Update db to reflect the corresponding google id and set the
-			// synced field
-			dbHelper.setGoogleListofWlist(wList.getId(), newtaskList.getId());
+			}
+
+			
 
 		}
 		else
+		{
+			// List already exists, check if it needs updation
+			Long lastSync = GetLastSyncTime();
+
 			Log.d(App.TAG, wList.getTitle()
 					+ " List Already exists on google with id "
 					+ google_list_id);
 
+			String lastUpdated = wList.getUpdated_at();
+			if (TextUtils.isEmpty(lastUpdated))
+			{
+				Log.d(App.TAG, "No need of updating");
+				return;
+			}
+
+			if (DateHelper.persistDate(lastUpdated) > lastSync || lastSync == 0)
+			{
+				Log.d(App.TAG, wList.getTitle() + " List needs updating");
+
+				TaskList taskList = GetTaskList(wList.getTitle());
+
+				try
+				{
+					client.tasklists().update(google_list_id, taskList).execute();
+				}
+				catch (GoogleJsonResponseException e)
+				{
+					handleGoogleJSONError(e);
+				}
+
+			}
+
+		}
+
+	}
+	
+	private TaskList GetTaskList(String title)
+	{
+		TaskList taskList;
+		taskList = new TaskList();
+		taskList.setTitle(title);
+		return taskList;
 	}
 
 	public void CreateOrEnsureTasks(List<WTask> tasks, String[] selectedListIds)
@@ -200,6 +243,40 @@ public class GTaskHelper
 
 	}
 
+	private void handleGoogleJSONError(GoogleJsonResponseException e)
+	{
+		String message = e.getStatusMessage();
+		try
+		{
+			JSONObject json = new JSONObject(new JSONTokener(e.getMessage().substring(e.getMessage().indexOf("{"))));
+			JSONObject error = json.getJSONArray("errors").getJSONObject(0);
+			Long errorCode = json.getLong("code");
+
+			message = error.getString("message");
+
+			Log.e(App.TAG, message);
+			Log.e(App.TAG, "Error code: " + errorCode);
+			
+		}
+		catch (Exception ee)
+		{
+
+			Log.e(App.TAG, ee.getMessage());
+		}
+
+	}
+	
+	private Long GetLastSyncTime()
+	{
+		AppPreferences preferences = new AppPreferences(context);
+
+		Long lastSync = preferences.GetLastSyncDate();
+		
+		return lastSync;
+		
+		
+	}
+
 	private void CreateTaskIfNotExist(WTask wTask) throws IOException
 	{
 		DbHelper dbHelper = DbHelper.getInstance(context);
@@ -225,33 +302,26 @@ public class GTaskHelper
 			// Add a task to the default task list
 			Task task = GetTaskObj("", wTask.getTitle(), wTask.getDue_date().toString(), wTask.getNote(), wTask.getCompleted_at());
 
-			Task newTask = client.tasks().insert(google_list_id, task).execute();
+			try
+			{
+				Task newTask = client.tasks().insert(google_list_id, task).execute();
 
-			// Update db to reflect the corresponding google id and set the
-			// synced field
-			dbHelper.setGoogleTaskofWTask(wTask.getId(), newTask.getId());
+				// Update db to reflect the corresponding google id and set the
+				// synced field
+				dbHelper.setGoogleTaskofWTask(wTask.getId(), newTask.getId());
+			}
+			catch (GoogleJsonResponseException e)
+			{
+				handleGoogleJSONError(e);
+			}
 
 		}
 		else
 		{
 			// The goole task already exists. Check if it needs updation
-
-//			Log.d(App.TAG, wTask.getTitle()
-//					+ " Task Already exists on google with id "
-//					+ google_list_id);
-
-			AppPreferences preferences = new AppPreferences(context);
-
-			Long lastSync = preferences.GetLastSyncDate();
-			
-			
-//			Log.d(App.TAG, "Last sync at " + lastSync);
-//			Log.d(App.TAG, "Last sync at " + new Date(lastSync).toGMTString());
-//			
+			Long lastSync = GetLastSyncTime();
 
 			String lastUpdated = wTask.getUpdated_at();
-//			Log.d(App.TAG, "Task updated at " + lastUpdated);
-//			Log.d(App.TAG, "Task updated at " + DbHelper.persistDate(lastUpdated));
 			if (TextUtils.isEmpty(lastUpdated))
 			{
 				Log.d(App.TAG, "No need of updating");
@@ -276,26 +346,7 @@ public class GTaskHelper
 				}
 				catch (GoogleJsonResponseException e)
 				{
-					String message = e.getStatusMessage();
-					Log.e(App.TAG, e.getMessage());
-
-					try
-					{
-						JSONObject json = new JSONObject(new JSONTokener(e.getMessage().substring(e.getMessage().indexOf("{"))));
-						JSONObject error = json.getJSONArray("errors").getJSONObject(0);
-						Long errorCode=json.getLong("code");
-						
-						message = error.getString("message");
-						
-						Log.e(App.TAG, message);
-						Log.e(App.TAG, "Error code " +errorCode);
-					}
-					catch (Exception ee)
-					{
-
-						Log.e(App.TAG, ee.getMessage());
-					}
-
+					handleGoogleJSONError(e);
 				}
 
 			}

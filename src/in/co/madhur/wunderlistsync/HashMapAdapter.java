@@ -5,13 +5,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.CheckedTextView;
-import android.widget.TextView;
-
 import in.co.madhur.wunderlistsync.api.model.WList;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class HashMapAdapter extends BaseAdapter
 {

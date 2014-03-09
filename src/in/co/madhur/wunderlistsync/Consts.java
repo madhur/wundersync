@@ -9,6 +9,15 @@ public class Consts
 
 	public static final int REQUEST_ACCOUNT_PICKER = 2;
 	
+	public enum SyncType
+	{
+		REGULAR,
+		MANUAL,
+		UNKNOWN
+		
+	};
+	
+	
 	
 }
 

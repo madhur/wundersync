@@ -42,6 +42,7 @@ import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -57,12 +58,8 @@ public class MainActivity extends PreferenceActivity
 	GoogleAccountCredential credential;
 
 	AppPreferences appPreferences;
-	// ArrayAdapter<String> adapter;
 
 	public com.google.api.services.tasks.Tasks service;
-	// public List<String> tasksList;
-	// public int numAsyncTasks;
-	// private ListView listView;
 
 	final HttpTransport httpTransport = AndroidHttp.newCompatibleTransport();
 
@@ -84,13 +81,10 @@ public class MainActivity extends PreferenceActivity
 	{
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.xml.preferences);
-		// setContentView(R.layout.calendarlist);
 		appPreferences = new AppPreferences(this);
 		statusPrefence = new StatusPreference(this);
 
 		getPreferenceScreen().addPreference(statusPrefence);
-		// listView = (ListView) findViewById(R.id.list);
-		// Google Accounts
 
 	}
 
@@ -98,16 +92,15 @@ public class MainActivity extends PreferenceActivity
 	protected void onResume()
 	{
 		super.onResume();
-		//
-		// if (checkGooglePlayServicesAvailable())
-		// {
-		// haveGooglePlayServices();
-		// }
+		
+		initCalendars();
 		App.getEventBus().register(statusPrefence);
 		SetListeners();
-		initCalendars();
+		
 		updateCallLogCalendarLabelFromPref();
+		
 		UpdateLabel((ListPreference) findPreference(Keys.AUTO_SYNC_SCHEDULE.key), null);
+		
 		UpdateConnected(findPreference(Keys.GOOGLE_CONNECTED.key), null);
 	}
 
@@ -135,7 +128,6 @@ public class MainActivity extends PreferenceActivity
 	@Override
 	protected void onPause()
 	{
-		// TODO Auto-generated method stub
 		super.onPause();
 		App.getEventBus().unregister(statusPrefence);
 	}
@@ -180,10 +172,6 @@ public class MainActivity extends PreferenceActivity
 
 	}
 
-	/**
-	 * 
-	 */
-
 	public void StartSync()
 	{
 
@@ -221,6 +209,9 @@ public class MainActivity extends PreferenceActivity
 				title = getString(R.string.app_name);
 				msg = getString(R.string.missing_google_cred);
 				break;
+				
+			case VIEW_LOG:
+				return in.co.madhur.wunderlistsync.utils.AppLog.displayAsDialog(App.LOG, this);
 
 			case START_SYNC:
 				title = getString(R.string.app_name);
@@ -263,6 +254,7 @@ public class MainActivity extends PreferenceActivity
 
 	private void SetListeners()
 	{
+		Log.v(App.TAG, "Listeners");
 
 		findPreference(Keys.AUTO_SYNC_SCHEDULE.key).setOnPreferenceChangeListener(listPreferenceChangeListerner);
 
@@ -695,6 +687,30 @@ public class MainActivity extends PreferenceActivity
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
+	
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item)
+	{
+		switch (item.getItemId())
+		{
+			case R.id.action_viewlog:
+				showDialog(Dialogs.VIEW_LOG.ordinal());
+				return true;
+
+			case R.id.action_about:
+				showDialog(Dialogs.ABOUT.ordinal());
+
+				return true;
+
+			case R.id.action_reset:
+				showDialog(Dialogs.RESET.ordinal());
+				return true;
+				
+			default:
+				return super.onMenuItemSelected(featureId, item);
+
+		}
+	}
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
@@ -741,7 +757,6 @@ public class MainActivity extends PreferenceActivity
 						findPreference(Keys.GOOGLE_CONNECTED.key).setSummary(String.format(getString(R.string.connected_string), appPreferences.GetUserName()));
 
 						UpdateConnected(findPreference(Keys.GOOGLE_CONNECTED.key), true);
-						// AsyncLoadTasks.run(this);
 					}
 				}
 				break;

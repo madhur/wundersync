@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
     <uses-permission android:name="android.permission.WRITE_CALENDAR"/>
-
+    <uses-permission  android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.USE_CREDENTIALS"/>
 
@@ -40,7 +40,6 @@
         
           <receiver android:name=".recievers.SyncSchedulerReceiver" android:enabled="true">
           <intent-filter>
-            <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
             <action android:name="android.intent.action.BOOT_COMPLETED"/>
           </intent-filter>
         </receiver>

@@ -1,9 +1,9 @@
 package in.co.madhur.wunderlistsync;
 
+
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 
-import android.R.string;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -22,7 +22,7 @@ public class AppPreferences
 	{
 		GOOGLE_CONNECTED("connected"),
 		ENABLE_AUTO_SYNC("enable_auto_sync"),
-		AUTO_SYNC_SCHEDULE("auto_backup_schedule"),
+		AUTO_SYNC_SCHEDULE("auto_sync_schedule"),
 		ENABLE_WIFI_ONLY("wifi_only"),
 		USER_NAME_GOOGLE("user_name_google"),
 		LAST_SYNC_DATE("last_sync_date"),
@@ -33,6 +33,7 @@ public class AppPreferences
 		SELECT_SYNC_LISTS("select_sync_list"),
 		ENABLE_CALENDAR_SYNC("enable_sync_calendar"),
 		CALENDAR_SYNC("sync_calendar");
+		
 
 		public final String key;
 
@@ -107,11 +108,11 @@ public class AppPreferences
 		edit.commit();
 
 	}
-	
+
 	public int GetTaskCalendar()
 	{
 		return getStringAsInt(Keys.CALENDAR_SYNC.key, -1);
-		
+
 	}
 
 	public String GetWunderUserName()
@@ -219,6 +220,30 @@ public class AppPreferences
 
 		return sharedPreferences.getBoolean(Keys.ENABLE_AUTO_SYNC.key, false);
 
+	}
+
+	public boolean isLoginInformationSet()
+	{
+		if (isEmptyCred() || TextUtils.isEmpty(GetUserName()))
+			return false;
+
+		return true;
+	}
+
+	public boolean isFirstSync()
+	{
+		if (GetLastSyncDate() == 0)
+			return true;
+
+		return false;
+	}
+
+	public int getSchedule()
+	{
+		String timeout = sharedPreferences.getString(Keys.AUTO_SYNC_SCHEDULE.key, "7200");
+
+		return Integer.parseInt(timeout);
+	
 	}
 
 }

@@ -19,7 +19,7 @@ public class WunderList
 	private static WunderAPI service;
 	private static String token;
 	private static String userId;
-	
+
 	private WunderList()
 	{
 
@@ -37,7 +37,7 @@ public class WunderList
 		}
 		catch (RetrofitError e)
 		{
-			if(e.isNetworkError())
+			if (e.isNetworkError())
 				throw new NetworkException(APIConsts.NETWORK_ERROR);
 			if (e.getResponse().getStatus() == 403)
 				throw new AuthException(APIConsts.AUTH_ERROR);
@@ -48,13 +48,12 @@ public class WunderList
 
 		// Save the token
 		token = response.getToken();
-		userId=	response.getId();
-		
+		userId = response.getId();
+
 		return response;
 	}
-	
-	
-	public  Me GetUserInfo() throws NetworkException
+
+	public Me GetUserInfo() throws NetworkException
 	{
 		Me userInfo = null;
 
@@ -64,7 +63,7 @@ public class WunderList
 		}
 		catch (RetrofitError e)
 		{
-			if(e.isNetworkError())
+			if (e.isNetworkError())
 				throw new NetworkException(APIConsts.NETWORK_ERROR);
 		}
 
@@ -82,7 +81,8 @@ public class WunderList
 		return token;
 	}
 
-	private static boolean IsLoginRequired() throws AuthException, NetworkException
+	private static boolean IsLoginRequired() throws AuthException,
+			NetworkException
 	{
 		Me userInfo;
 
@@ -93,9 +93,19 @@ public class WunderList
 		}
 		catch (RetrofitError e)
 		{
-			if(e.isNetworkError())
-				throw new NetworkException(APIConsts.NETWORK_ERROR);
-			
+			if (e.isNetworkError())
+			{
+				if (e.getMessage() != null)
+				{
+					throw new NetworkException(e.getMessage());
+
+				}
+				else
+					throw new NetworkException(APIConsts.NETWORK_ERROR);
+
+			}
+
+			Log.v(App.TAG, String.valueOf(e.getResponse().getStatus()));
 			if (e.getResponse().getStatus() == 401)
 			{
 				return true;
@@ -116,9 +126,9 @@ public class WunderList
 
 		catch (RetrofitError e)
 		{
-			if(e.isNetworkError())
+			if (e.isNetworkError())
 				throw new NetworkException(APIConsts.NETWORK_ERROR);
-			
+
 			if (e.getResponse().getStatus() == 401)
 			{
 				throw new AuthException(APIConsts.AUTH_ERROR, AuthError.AUTH_ERROR);
@@ -139,9 +149,9 @@ public class WunderList
 		}
 		catch (RetrofitError e)
 		{
-			if(e.isNetworkError())
+			if (e.isNetworkError())
 				throw new NetworkException(APIConsts.NETWORK_ERROR);
-			
+
 			if (e.getResponse().getStatus() == 401)
 			{
 				throw new AuthException(APIConsts.AUTH_ERROR, AuthError.AUTH_ERROR);
@@ -154,7 +164,8 @@ public class WunderList
 
 	}
 
-	public static WunderList getInstance(String newToken) throws AuthException, NetworkException
+	public static WunderList getInstance(String newToken) throws AuthException,
+			NetworkException
 	{
 		if (wunderList == null)
 		{
